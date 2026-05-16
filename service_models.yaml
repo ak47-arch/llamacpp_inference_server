@@ -1,4 +1,4 @@
-# Dedicated model registry for the shared LLM service.
+# Provider registry for the generic inference server.
 
 providers:
   - id: gemma_e2b_local
@@ -51,4 +51,4 @@ providers:
       max_tokens: 512
       timeout_seconds: 300
 
-pipeline_routing: {}
+pipeline_routing: {}  # Optional logical-role routing; not used by the HTTP chat completions endpoint.

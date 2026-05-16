@@ -1,2 +1,1 @@
-# LLM provider abstraction layer.
-# External code should import from llm.pipeline, not from individual providers.
+"""Generic inference server package."""

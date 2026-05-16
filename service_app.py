@@ -101,7 +101,7 @@ def create_app(runtime: LLMServiceRuntime | None = None) -> Flask:
 
     @app.get("/health")
     def health():
-        return jsonify({"status": "ok", "service": "llm"})
+        return jsonify({"status": "ok", "service": "inference-server"})
 
     @app.get("/ready")
     def ready():
@@ -129,7 +129,7 @@ def build_runtime(config_path: str | None = None) -> LLMServiceRuntime:
     if config_path is None:
         repo_root = os.path.dirname(os.path.dirname(__file__))
         config_path = os.environ.get(
-            "SURVIVAL_LLM_CONFIG_FILE",
+            "LLM_SERVER_CONFIG_FILE",
             os.path.join(repo_root, "llm", "service_models.yaml"),
         )
     return LLMServiceRuntime(ProviderRouter(config_path))
@@ -139,6 +139,6 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    host = os.environ.get("SURVIVAL_LLM_HOST", "0.0.0.0")
-    port = int(os.environ.get("SURVIVAL_LLM_PORT", "8012"))
+    host = os.environ.get("LLM_SERVER_HOST", "0.0.0.0")
+    port = int(os.environ.get("LLM_SERVER_PORT", "8012"))
     app.run(host=host, port=port)

@@ -1,4 +1,4 @@
-"""Reads models.yaml and routes inference calls by pipeline role."""
+"""Loads provider configuration and routes inference calls by logical role."""
 
 import os
 from typing import Optional

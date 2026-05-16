@@ -93,7 +93,7 @@ All .so libs co-located in same directory — must set LD_LIBRARY_PATH
 cd ~/llama-cpp/llama-b8763
 echo "Your prompt here" > /tmp/prompt.txt
 timeout 120 bash -c "LD_LIBRARY_PATH=. ./llama-cli \
-  -m /home/anupam/Desktop/forthechemicals/gemma/<model>.gguf \
+  -m /absolute/path/to/gemma/<model>.gguf \
   -ngl 0 \        # no GPU offload (CPU-only)
   -t 8 \          # 8 threads (matches CPU cores)
   -n 128 \        # max tokens to generate
@@ -147,10 +147,10 @@ Both models responded correctly to `Reply with exactly: E2B_OK` / `Reply with ex
 - Async/batch (every 2–5 seconds): feasible but slow
 
 ### Conclusion
-- Real-time inference: Use MediaPipe, MobileNet, or CNN models (not LLMs)
-- Batch/async operations (labeling assist, dataset QA, coaching): **E2B Q4_K_M is the speed-first choice**
-- Quality-first local extraction/parsing: **E4B Q4_K_M is the better E4B option**
-- All current ForTheChemicals ML pipeline operations are batch/async → no real-time constraint
+- Real-time inference on old phones is not practical for these local Gemma models
+- For CPU-hosted inference servers, **E2B Q4_K_M is the speed-first choice**
+- For quality-first local inference, **E4B Q4_K_M is the stronger E4B option**
+- Prefer containerized or desktop-hosted deployment over on-device inference for this repository
 
 ---
 
@@ -171,20 +171,20 @@ Both models responded correctly to `Reply with exactly: E2B_OK` / `Reply with ex
 ## 8. HuggingFace Download Commands
 
 ```bash
-# Activate project venv first
-source /home/anupam/Desktop/forthechemicals/.venv/bin/activate
+# Optional: activate a virtual environment first
+source .venv/bin/activate
 
-# E2B IQ2_M (downloaded)
-python3 -c "from huggingface_hub import snapshot_download; snapshot_download('bartowski/google_gemma-4-E2B-it-GGUF', allow_patterns='*IQ2_M.gguf', local_dir='/home/anupam/Desktop/forthechemicals/gemma/')"
+# E2B IQ2_M
+python3 -c "from huggingface_hub import snapshot_download; snapshot_download('bartowski/google_gemma-4-E2B-it-GGUF', allow_patterns='*IQ2_M.gguf', local_dir='./gemma/')"
 
-# E2B Q4_K_M (downloaded)
-python3 -c "from huggingface_hub import snapshot_download; snapshot_download('bartowski/google_gemma-4-E2B-it-GGUF', allow_patterns='*Q4_K_M.gguf', local_dir='/home/anupam/Desktop/forthechemicals/gemma/')"
+# E2B Q4_K_M
+python3 -c "from huggingface_hub import snapshot_download; snapshot_download('bartowski/google_gemma-4-E2B-it-GGUF', allow_patterns='*Q4_K_M.gguf', local_dir='./gemma/')"
 
-# E4B UD-IQ2_M (downloaded)
-python3 -c "from huggingface_hub import snapshot_download; snapshot_download('unsloth/gemma-4-E4B-it-GGUF', allow_patterns='*UD-IQ2_M.gguf', local_dir='/home/anupam/Desktop/forthechemicals/gemma/')"
+# E4B UD-IQ2_M
+python3 -c "from huggingface_hub import snapshot_download; snapshot_download('unsloth/gemma-4-E4B-it-GGUF', allow_patterns='*UD-IQ2_M.gguf', local_dir='./gemma/')"
 
-# E4B Q4_K_M (downloaded)
-python3 -c "from huggingface_hub import snapshot_download; snapshot_download('bartowski/google_gemma-4-E4B-it-GGUF', allow_patterns='*Q4_K_M.gguf', local_dir='/home/anupam/Desktop/forthechemicals/gemma/')"
+# E4B Q4_K_M
+python3 -c "from huggingface_hub import snapshot_download; snapshot_download('bartowski/google_gemma-4-E4B-it-GGUF', allow_patterns='*Q4_K_M.gguf', local_dir='./gemma/')"
 ```
 
 Note: `hf` CLI alias not available in this environment — use `huggingface_hub` Python API directly.
