@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  llm:
+    build:
+      context: ..
+      dockerfile: llm/Dockerfile
+    container_name: survival-llm-standalone
+    restart: unless-stopped
+    environment:
+      SURVIVAL_LLM_HOST: 0.0.0.0
+      SURVIVAL_LLM_PORT: 8012
+      SURVIVAL_LLM_CONFIG_FILE: /app/llm/service_models.yaml
+    ports:
+      - "8012:8012"
+    volumes:
+      - ./gemma:/models:ro
+      - ${SURVIVAL_LLAMA_CPP_DIR:?set SURVIVAL_LLAMA_CPP_DIR}:/opt/llama-cpp:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8012/ready', timeout=30)"]
+      interval: 10s
+      timeout: 30s
+      retries: 12
+      start_period: 60s
+
+networks:
+  default:
+    name: survival-network
+    driver: bridge
