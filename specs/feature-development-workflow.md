@@ -161,6 +161,7 @@ Required in-memory workflow planning model for a multi-requirement request:
 ### Spec Commits
 
 - 2026-05-17 | bc417fa8b7e2ba2c919635f1f2c812eda4b2fefe | add canonical feature development workflow spec
+- 2026-05-17 | e296e5ac8d69b3d44a398388ed95492fc5ec8c2b | require feature-development skill and multi-feature dependency planning
 
 ### Implementation Commits
 
