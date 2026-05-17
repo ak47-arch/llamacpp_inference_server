@@ -294,7 +294,7 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 
 ### Spec Commits
 
-- YYYY-MM-DD | <commit-hash> | <summary>
+- 2026-05-17 | ec7e0e02196dddeb848d84e8a88baaf474fe5868 | add canonical isolated subagent verification commands spec
 
 ### Implementation Commits
 
