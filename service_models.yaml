@@ -15,15 +15,13 @@ providers:
         ctx_size: 8192
         threads: 8
         extra_args:
-          - --reasoning
-          - "off"
-          - --reasoning-budget
-          - "0"
-          - --reasoning-format
-          - none
+#          - --reasoning
+#          - "off"
+#          - --reasoning-budget
+#          - "0"
+#          - --reasoning-format
+#          - none
     default_params:
-      temperature: 0.0
-      max_tokens: 512
       timeout_seconds: 300
 
   - id: gemma_e4b_local
@@ -40,15 +38,37 @@ providers:
         ctx_size: 8192
         threads: 8
         extra_args:
-          - --reasoning
-          - "off"
-          - --reasoning-budget
-          - "0"
-          - --reasoning-format
-          - none
+#          - --reasoning
+#          - "off"
+#          - --reasoning-budget
+#          - "0"
+#          - --reasoning-format
+#          - none
     default_params:
-      temperature: 0.1
-      max_tokens: 512
+      timeout_seconds: 300
+
+  - id: gemma_e4b_q4_local
+    provider_type: openai_compatible
+    model_name: gemma_e4b_q4_local
+    connection:
+      base_url: http://127.0.0.1:18014
+      managed_server:
+        binary_path: /opt/llama-cpp/llama-server
+        model_path: /models/google_gemma-4-E4B-it-Q4_K_M.gguf
+        host: 127.0.0.1
+        port: 18014
+        startup_timeout_seconds: 180
+        ctx_size: 8192
+        threads: 8
+        extra_args:
+#          - --reasoning
+#          - "off"
+#          - --reasoning-budget
+#          - "0"
+#          - --reasoning-format
+#          - none
+
+    default_params:
       timeout_seconds: 300
 
 pipeline_routing: {}  # Optional logical-role routing; not used by the HTTP chat completions endpoint.

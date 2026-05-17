@@ -69,9 +69,11 @@ class OpenAICompatibleProvider(BaseProvider):
         payload = {
             "model": self.model_name,
             "messages": messages,
-            "temperature": merged.get("temperature", 0.1),
-            "max_tokens": merged.get("max_tokens", 512),
         }
+        if "temperature" in merged:
+            payload["temperature"] = merged["temperature"]
+        if "max_tokens" in merged:
+            payload["max_tokens"] = merged["max_tokens"]
 
         timeout = merged.get("timeout_seconds", 120)
         start = time.monotonic()

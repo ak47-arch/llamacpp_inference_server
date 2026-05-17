@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import yaml
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT.parent))
 
@@ -45,6 +47,23 @@ class GenericInferenceServerTests(unittest.TestCase):
         self.assertIn("COPY . /app/llm", content)
         self.assertNotIn("COPY llm/ ./llm/", content)
         self.assertNotIn("COPY config/ ./config/", content)
+
+    def test_service_models_declares_e4b_q4_provider(self):
+        config = yaml.safe_load((REPO_ROOT / "service_models.yaml").read_text())
+        provider_ids = {provider["id"] for provider in config["providers"]}
+        self.assertIn("gemma_e4b_q4_local", provider_ids)
+
+        provider = next(provider for provider in config["providers"] if provider["id"] == "gemma_e4b_q4_local")
+        self.assertEqual(provider["connection"]["managed_server"]["model_path"], "/models/google_gemma-4-E4B-it-Q4_K_M.gguf")
+
+    def test_service_models_comments_out_reasoning_arguments(self):
+        lines = (REPO_ROOT / "service_models.yaml").read_text().splitlines()
+        self.assertEqual(sum(line == "#          - --reasoning" for line in lines), 3)
+        self.assertEqual(sum(line == "#          - \"off\"" for line in lines), 3)
+        self.assertEqual(sum(line == "#          - --reasoning-budget" for line in lines), 3)
+        self.assertEqual(sum(line == "#          - \"0\"" for line in lines), 3)
+        self.assertEqual(sum(line == "#          - --reasoning-format" for line in lines), 3)
+        self.assertEqual(sum(line == "#          - none" for line in lines), 3)
 
 
 if __name__ == "__main__":
