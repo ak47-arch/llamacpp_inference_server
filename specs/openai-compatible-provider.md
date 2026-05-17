@@ -249,4 +249,4 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 
 ### Implementation Commits
 
-- YYYY-MM-DD | <commit-hash> | <summary>
+- 2026-05-17 | 4fbdb89841c35c5b522c187508dd04c3208bc476 | add e4b q4 provider and remove implicit temperature and max_tokens defaults
