@@ -352,6 +352,7 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 ### Spec Commits
 
 - 2026-05-17 | 0affeba38d2f6c8f7cfe1652875649d54e8d8e40 | consolidate bundled provider config and defaulting rules into canonical spec
+- 2026-05-17 | bc6b4c9b70a7bd418991d808765f54210e60fc93 | add multimodal pass-through and managed projector configuration to canonical spec
 
 ### Implementation Commits
 

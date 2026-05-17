@@ -36,3 +36,4 @@ This file is both:
 - 2026-05-17 | spec: specs/monitoring.md | kind: spec | commit: 297a8299eb0eca77c33cd9118227f818e2b57cf2 | summary: add canonical monitoring and observability spec
 - 2026-05-17 | spec: specs/monitoring.md | kind: implementation | commit: 99b4ff5d9b49d5220a7860ef52b693be064326b4 | summary: add Prometheus metrics endpoint and runtime telemetry
 - 2026-05-17 | spec: specs/subagents.md | kind: spec | commit: ec7e0e02196dddeb848d84e8a88baaf474fe5868 | summary: add canonical isolated subagent verification commands spec
+- 2026-05-17 | spec: specs/openai-compatible-provider.md | kind: spec | commit: bc6b4c9b70a7bd418991d808765f54210e60fc93 | summary: add multimodal pass-through and managed projector configuration to canonical spec
