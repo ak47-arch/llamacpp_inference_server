@@ -3,8 +3,9 @@
 import os
 import time
 
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, request
 
+from . import monitoring
 from .provider_base import ProviderTimeoutError, ProviderUnavailableError
 from .router import ProviderRouter
 
@@ -23,15 +24,33 @@ class LLMServiceRuntime:
 
         for provider_id in self.router.provider_ids():
             provider = self.router.get_provider(provider_id)
-            provider.warmup()
-            provider.complete(
-                "Readiness probe: respond with ok.",
-                "You are a healthcheck probe. Reply with exactly 'ok'.",
-                {
-                    "temperature": 0.0,
-                    "max_tokens": 4,
-                    "timeout_seconds": 20,
-                },
+            provider_name = monitoring.provider_identity(provider)
+            start = time.monotonic()
+            try:
+                provider.warmup()
+                result = provider.complete(
+                    "Readiness probe: respond with ok.",
+                    "You are a healthcheck probe. Reply with exactly 'ok'.",
+                    {
+                        "temperature": 0.0,
+                        "max_tokens": 4,
+                        "timeout_seconds": 20,
+                    },
+                )
+            except Exception as exc:
+                monitoring.observe_readiness(
+                    model=provider_id,
+                    provider=provider_name,
+                    outcome=monitoring.classify_exception(exc),
+                    duration_seconds=time.monotonic() - start,
+                )
+                raise
+
+            monitoring.observe_readiness(
+                model=provider_id,
+                provider=result.provider or provider_name,
+                outcome="success",
+                duration_seconds=time.monotonic() - start,
             )
 
         self._last_probe_ok = True
@@ -60,15 +79,36 @@ class LLMServiceRuntime:
                 prompt_parts.append(content)
 
         provider = self.router.get_provider(model)
+        monitoring.set_resolved_model(model)
+        provider_name = monitoring.provider_identity(provider)
+        monitoring.set_resolved_provider(provider_name)
         params = {}
         for key in ("temperature", "max_tokens", "timeout_seconds"):
             if key in payload:
                 params[key] = payload[key]
 
-        result = provider.complete(
-            "\n\n".join(part for part in prompt_parts if part),
-            "\n\n".join(part for part in system_parts if part),
-            params or None,
+        prompt = "\n\n".join(part for part in prompt_parts if part)
+        system = "\n\n".join(part for part in system_parts if part)
+        start = time.monotonic()
+        try:
+            result = provider.complete(prompt, system, params or None)
+        except Exception as exc:
+            monitoring.observe_provider_duration(
+                route="/v1/chat/completions",
+                model=model,
+                provider=provider_name,
+                outcome=monitoring.classify_exception(exc),
+                duration_seconds=time.monotonic() - start,
+            )
+            raise
+
+        monitoring.set_resolved_provider(result.provider or provider_name)
+        monitoring.observe_provider_duration(
+            route="/v1/chat/completions",
+            model=model,
+            provider=result.provider or provider_name,
+            outcome="success",
+            duration_seconds=time.monotonic() - start,
         )
 
         return {
@@ -101,26 +141,110 @@ def create_app(runtime: LLMServiceRuntime | None = None) -> Flask:
 
     @app.get("/health")
     def health():
-        return jsonify({"status": "ok", "service": "inference-server"})
+        route = "/health"
+        start = time.monotonic()
+        with monitoring.request_context(route), monitoring.track_in_flight(route):
+            try:
+                response = jsonify({"status": "ok", "service": "inference-server"})
+            except Exception as exc:
+                model, provider = monitoring.current_request_labels()
+                monitoring.observe_request(
+                    route=route,
+                    model=model,
+                    provider=provider,
+                    outcome=monitoring.classify_exception(exc),
+                    duration_seconds=time.monotonic() - start,
+                )
+                raise
+
+            model, provider = monitoring.current_request_labels()
+            monitoring.observe_request(
+                route=route,
+                model=model,
+                provider=provider,
+                outcome="success",
+                duration_seconds=time.monotonic() - start,
+            )
+            return response
 
     @app.get("/ready")
     def ready():
-        try:
-            return jsonify(service_runtime.readiness())
-        except (ProviderTimeoutError, ProviderUnavailableError, RuntimeError, KeyError, ValueError) as exc:
-            return _error_response(503, "runtime_unavailable", str(exc))
+        route = "/ready"
+        start = time.monotonic()
+        with monitoring.request_context(route), monitoring.track_in_flight(route):
+            try:
+                response = jsonify(service_runtime.readiness())
+                outcome = "success"
+            except ProviderTimeoutError as exc:
+                outcome = "timeout"
+                response = _error_response(503, "runtime_unavailable", str(exc))
+            except (ProviderUnavailableError, RuntimeError, KeyError, ValueError) as exc:
+                outcome = monitoring.classify_exception(exc)
+                response = _error_response(503, "runtime_unavailable", str(exc))
+            except Exception as exc:
+                model, provider = monitoring.current_request_labels()
+                monitoring.observe_request(
+                    route=route,
+                    model=model,
+                    provider=provider,
+                    outcome=monitoring.classify_exception(exc),
+                    duration_seconds=time.monotonic() - start,
+                )
+                raise
+
+            model, provider = monitoring.current_request_labels()
+            monitoring.observe_request(
+                route=route,
+                model=model,
+                provider=provider,
+                outcome=outcome,
+                duration_seconds=time.monotonic() - start,
+            )
+            return response
 
     @app.post("/v1/chat/completions")
     def chat_completions():
+        route = "/v1/chat/completions"
+        start = time.monotonic()
         payload = request.get_json(silent=True) or {}
-        try:
-            return jsonify(service_runtime.complete_chat(payload))
-        except ValueError as exc:
-            return _error_response(400, "invalid_request", str(exc))
-        except ProviderTimeoutError as exc:
-            return _error_response(504, "timeout", str(exc))
-        except (ProviderUnavailableError, RuntimeError, KeyError) as exc:
-            return _error_response(503, "runtime_unavailable", str(exc))
+        with monitoring.request_context(route), monitoring.track_in_flight(route):
+            try:
+                response = jsonify(service_runtime.complete_chat(payload))
+                outcome = "success"
+            except ValueError as exc:
+                outcome = "client_error"
+                response = _error_response(400, "invalid_request", str(exc))
+            except ProviderTimeoutError as exc:
+                outcome = "timeout"
+                response = _error_response(504, "timeout", str(exc))
+            except (ProviderUnavailableError, RuntimeError, KeyError) as exc:
+                outcome = monitoring.classify_exception(exc)
+                response = _error_response(503, "runtime_unavailable", str(exc))
+            except Exception as exc:
+                model, provider = monitoring.current_request_labels()
+                monitoring.observe_request(
+                    route=route,
+                    model=model,
+                    provider=provider,
+                    outcome=monitoring.classify_exception(exc),
+                    duration_seconds=time.monotonic() - start,
+                )
+                raise
+
+            model, provider = monitoring.current_request_labels()
+            monitoring.observe_request(
+                route=route,
+                model=model,
+                provider=provider,
+                outcome=outcome,
+                duration_seconds=time.monotonic() - start,
+            )
+            return response
+
+    @app.get("/metrics")
+    def metrics():
+        payload, content_type = monitoring.metrics_response()
+        return Response(payload, mimetype=content_type)
 
     return app
 

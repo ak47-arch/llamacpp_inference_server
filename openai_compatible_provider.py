@@ -26,6 +26,7 @@ class OpenAICompatibleProvider(BaseProvider):
         managed_server: Optional[dict] = None,
     ):
         self.model_id = model_id
+        self.provider_name = "openai_compatible"
         self.base_url = base_url.rstrip("/")
         self.model_name = model_name
         self.api_key = api_key
@@ -41,6 +42,7 @@ class OpenAICompatibleProvider(BaseProvider):
             binary_path=self.managed_server["binary_path"],
             model_path=self.managed_server["model_path"],
             model_name=self.model_name,
+            model_id=self.model_id,
             server_config=self.managed_server,
             default_params=self.default_params,
         )

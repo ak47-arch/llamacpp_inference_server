@@ -22,6 +22,7 @@ class LlamaCppProvider(BaseProvider):
         default_params: Optional[dict] = None,
     ):
         self.model_id = model_id
+        self.provider_name = "llama_cpp"
         self.binary_path = os.path.expanduser(binary_path)
         self.model_path = os.path.expanduser(model_path)
         self.default_params = default_params or {}

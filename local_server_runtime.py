@@ -6,6 +6,8 @@ import time
 import urllib.error
 import urllib.request
 
+from . import monitoring
+
 
 _managed_servers = {}
 
@@ -91,9 +93,11 @@ def ensure_managed_server(
     binary_path: str,
     model_path: str,
     model_name: str,
+    model_id: str | None = None,
     server_config: dict | None = None,
     default_params: dict | None = None,
 ) -> None:
+    metric_model = model_id or model_name
     if _server_is_ready(base_url):
         return
 
@@ -101,6 +105,8 @@ def ensure_managed_server(
     if existing is not None and existing.poll() is None:
         _wait_for_server(base_url, (server_config or {}).get("startup_timeout_seconds", 30))
         return
+    if existing is not None and existing.poll() is not None:
+        monitoring.increment_managed_server_restart(metric_model, base_url)
 
     command = _build_server_command(
         binary_path=binary_path,
@@ -111,6 +117,7 @@ def ensure_managed_server(
         default_params=default_params,
     )
 
+    start = time.monotonic()
     process = subprocess.Popen(
         command,
         stdout=subprocess.DEVNULL,
@@ -120,6 +127,12 @@ def ensure_managed_server(
     try:
         _wait_for_server(base_url, (server_config or {}).get("startup_timeout_seconds", 30))
     except Exception:
+        monitoring.observe_managed_server_startup(
+            model=metric_model,
+            base_url=base_url,
+            outcome="unavailable",
+            duration_seconds=time.monotonic() - start,
+        )
         process.terminate()
         try:
             process.wait(timeout=2)
@@ -128,6 +141,12 @@ def ensure_managed_server(
             process.wait(timeout=2)
         raise
 
+    monitoring.observe_managed_server_startup(
+        model=metric_model,
+        base_url=base_url,
+        outcome="success",
+        duration_seconds=time.monotonic() - start,
+    )
     _managed_servers[base_url] = process
 
 
