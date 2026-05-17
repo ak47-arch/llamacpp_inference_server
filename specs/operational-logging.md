@@ -227,4 +227,6 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 
 ### Spec Commits
 
+- 2026-05-17 | 46e4e3fbf081af3ff6e11954031464a04ad8c8e3 | add canonical operational logging spec
+
 ### Implementation Commits
