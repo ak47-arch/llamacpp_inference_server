@@ -166,3 +166,4 @@ Required in-memory workflow planning model for a multi-requirement request:
 ### Implementation Commits
 
 - 2026-05-17 | ec4d80472f3d2093cb4d983edf1d4fa4f3e22451 | align repository docs and skills with canonical specs
+- 2026-05-17 | 00d06ba5f804a325197e9d1d1aaa54434786171f | require workflow skill and multi-feature planning in docs and prompts
