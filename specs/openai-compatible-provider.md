@@ -245,7 +245,7 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 
 ### Spec Commits
 
-- YYYY-MM-DD | <commit-hash> | <summary>
+- 2026-05-17 | 0affeba38d2f6c8f7cfe1652875649d54e8d8e40 | consolidate bundled provider config and defaulting rules into canonical spec
 
 ### Implementation Commits
 
