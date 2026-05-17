@@ -340,7 +340,7 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 
 ### Spec Commits
 
-- YYYY-MM-DD | <commit-hash> | <summary>
+- 2026-05-17 | 297a8299eb0eca77c33cd9118227f818e2b57cf2 | add canonical monitoring and observability spec
 
 ### Implementation Commits
 
