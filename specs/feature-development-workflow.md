@@ -112,4 +112,6 @@ Required workflow metadata for each changelog traceability entry:
 
 ### Spec Commits
 
+- 2026-05-17 | bc417fa8b7e2ba2c919635f1f2c812eda4b2fefe | add canonical feature development workflow spec
+
 ### Implementation Commits

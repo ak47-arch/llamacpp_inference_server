@@ -1,0 +1,23 @@
+# Changelog
+
+This file is both:
+
+1. a concise human-readable change summary, and
+2. an append-only traceability ledger for agents.
+
+## Rules
+
+- Record every non-traceability commit that changes a canonical spec.
+- Record every implementation commit tied to a canonical spec.
+- Record those hashes in the immediately following traceability commit.
+- Do not self-record traceability-only commits.
+
+## Unreleased
+
+### Summary
+
+- Workflow migration in progress: canonical feature-development spec established.
+
+### Traceability Ledger
+
+- 2026-05-17 | spec: specs/feature-development-workflow.md | kind: spec | commit: bc417fa8b7e2ba2c919635f1f2c812eda4b2fefe | summary: add canonical feature development workflow spec
