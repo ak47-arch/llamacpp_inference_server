@@ -344,4 +344,4 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 
 ### Implementation Commits
 
-- YYYY-MM-DD | <commit-hash> | <summary>
+- 2026-05-17 | 99b4ff5d9b49d5220a7860ef52b693be064326b4 | add Prometheus metrics endpoint and runtime telemetry

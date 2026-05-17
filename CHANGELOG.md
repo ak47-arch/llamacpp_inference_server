@@ -22,6 +22,7 @@ This file is both:
 - Added a canonical spec for bundled OpenAI-compatible provider config and request-defaulting behavior.
 - Bundled provider config now includes E4B Q4, keeps reasoning flags commented out, and no longer injects implicit temperature/max_tokens defaults.
 - Added a canonical monitoring and observability spec for Prometheus metrics, readiness telemetry, and managed runtime startup instrumentation.
+- Implemented Prometheus `/metrics`, request/readiness metrics, and managed llama-server startup/restart telemetry.
 
 ### Traceability Ledger
 
@@ -32,3 +33,4 @@ This file is both:
 - 2026-05-17 | spec: specs/openai-compatible-provider.md | kind: spec | commit: 0affeba38d2f6c8f7cfe1652875649d54e8d8e40 | summary: consolidate bundled provider config and defaulting rules into canonical spec
 - 2026-05-17 | spec: specs/openai-compatible-provider.md | kind: implementation | commit: 4fbdb89841c35c5b522c187508dd04c3208bc476 | summary: add e4b q4 provider and remove implicit temperature and max_tokens defaults
 - 2026-05-17 | spec: specs/monitoring.md | kind: spec | commit: 297a8299eb0eca77c33cd9118227f818e2b57cf2 | summary: add canonical monitoring and observability spec
+- 2026-05-17 | spec: specs/monitoring.md | kind: implementation | commit: 99b4ff5d9b49d5220a7860ef52b693be064326b4 | summary: add Prometheus metrics endpoint and runtime telemetry
