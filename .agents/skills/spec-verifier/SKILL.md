@@ -25,7 +25,7 @@ Before running the audit, confirm you have the required inputs. If any required 
 
 ### Required
 
-1. **The spec file** — full contents of the specification document (e.g., `specs/NNN-feature-name.md` or equivalent). No spec = no audit. The spec is the ground truth.
+1. **The spec file** — full contents of the canonical specification document (e.g., `specs/routing.md`, `specs/providers.md`, or equivalent). No spec = no audit. The spec is the ground truth.
 2. **The diff** — a `git diff` or commit diff showing exactly what changed. The audit is scoped to this diff. Do not audit code outside it.
 
 ### Optional (enriches the report if provided)

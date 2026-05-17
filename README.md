@@ -127,6 +127,17 @@ curl -X POST http://127.0.0.1:8012/v1/chat/completions \
   }'
 ```
 
+## Development workflow
+
+Spec-driven work in this repository now uses living canonical specs rather than chronological per-change specs.
+
+See:
+
+- `docs/FEATURE_DEVELOPMENT_WORKFLOW.md`
+- `specs/feature-development-workflow.md`
+- `specs/TEMPLATE.md`
+- `CHANGELOG.md`
+
 ## Notes
 
 - This repository intentionally contains only generic inference-server code.

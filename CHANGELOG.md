@@ -16,7 +16,8 @@ This file is both:
 
 ### Summary
 
-- Workflow migration in progress: canonical feature-development spec established.
+- Workflow documentation migrated to living canonical specs with append-only commit-hash traceability.
+- Added the canonical spec, template, workflow guide, README pointers, and Pi workflow updates for feature development.
 
 ### Traceability Ledger
 
