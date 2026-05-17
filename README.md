@@ -130,9 +130,12 @@ curl -X POST http://127.0.0.1:8012/v1/chat/completions \
 ## Development workflow
 
 Spec-driven work in this repository now uses living canonical specs rather than chronological per-change specs.
+all feature work must use the `feature-development` skill / prompt.
 
 See:
 
+- `.pi/prompts/feature-development.md`
+- `.agents/skills/feature-development/SKILL.md`
 - `docs/FEATURE_DEVELOPMENT_WORKFLOW.md`
 - `specs/feature-development-workflow.md`
 - `specs/TEMPLATE.md`

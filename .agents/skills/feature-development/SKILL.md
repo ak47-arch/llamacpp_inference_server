@@ -18,6 +18,7 @@ You are the feature development orchestrator for this repository. Your job is to
 
 ## Hard Constraints (never violate)
 
+- All feature implementations must use this skill. This is a hard requirement.
 - No code without an `APPROVED` canonical spec.
 - No implementation without failing tests first.
 - Specs are stable capability documents in `specs/`; never create date-based or numbered specs.
@@ -31,6 +32,20 @@ You are the feature development orchestrator for this repository. Your job is to
 ---
 
 ## Phase 0 — Discovery (mandatory first stage)
+
+Before any spec work, decompose the user request into requirement items `R1..Rn`.
+
+For each requirement item:
+- identify the owning canonical spec
+- identify the owning module boundary
+- determine whether the requirement belongs to an existing feature area or a new one
+
+If requirement items map to different canonical specs, they are separate features even if they arrived in one user request.
+
+Build a dependency plan across all discovered features:
+- independent features may proceed in parallel
+- dependent features must proceed sequentially in dependency order
+- each independent feature keeps its own approval, spec commit, traceability, implementation, and verification lifecycle
 
 Load the grill-me skill from disk before any spec work:
 
@@ -61,6 +76,9 @@ Persist discovery findings in concise bullets before Phase 1:
 - constraints
 - technical scope
 - module ownership and boundaries
+- requirement decomposition (`R1..Rn`)
+- feature grouping by owning spec
+- dependency plan (parallel vs sequential)
 - edge cases
 - explicit non-goals
 - acceptance signal

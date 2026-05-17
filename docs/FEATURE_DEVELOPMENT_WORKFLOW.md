@@ -8,23 +8,34 @@ Chronological specs become a history of intent, not a description of the current
 
 ## Core Rules
 
-1. **Specs are organized by capability, subsystem, or domain area.**
+1. **All feature work must use the `feature-development` skill.**
+   - This is a hard requirement.
+   - Do not perform ad-hoc feature implementation outside that workflow.
+2. **Specs are organized by capability, subsystem, or domain area.**
    - Use stable names such as `specs/routing.md`, `specs/provider-config.md`, `specs/local-runtime.md`.
    - Do not create date-based or numbered spec files.
-2. **Specs are updated in place.**
+3. **Specs are updated in place.**
    - When work is related to an existing capability, update the existing canonical spec.
    - Create a new spec only when the work introduces a new enduring capability or boundary.
-3. **The main body of a spec describes current truth only.**
+4. **The main body of a spec describes current truth only.**
    - Remove or rewrite superseded behavior in the main sections.
    - Do not accumulate outdated behavior as a timeline in the spec body.
-4. **Commit-hash traceability is mandatory.**
+5. **Commit-hash traceability is mandatory.**
    - Every non-traceability commit that changes a canonical spec must be recorded in that spec and in `CHANGELOG.md`.
    - Every implementation commit must also be recorded in that spec and in `CHANGELOG.md`.
-5. **Traceability is append-only.**
+6. **Traceability is append-only.**
    - New traceability entries are appended; older entries are never rewritten except to fix formatting mistakes.
-6. **Traceability-only commits are exempt from self-recording.**
+7. **Traceability-only commits are exempt from self-recording.**
    - Otherwise the workflow would recurse forever.
    - A traceability commit exists to record the hash of the immediately preceding non-traceability commit.
+8. **Multi-requirement requests must be decomposed before spec drafting.**
+   - Break the request into requirement items `R1..Rn`.
+   - Identify the owning canonical spec and module boundary for each item.
+   - Requirement items mapping to different canonical specs are separate features.
+9. **Execution planning depends on feature dependencies.**
+   - Independent features may proceed in parallel.
+   - Dependent features must proceed sequentially in dependency order.
+   - Even when discovered in one session, each independent feature keeps separate approval, spec, and traceability lifecycles.
 
 ## Repository Artifacts
 
@@ -78,8 +89,11 @@ Example:
 ### Phase 0 — Discovery
 
 - Clarify the requested behavior and boundaries.
-- Identify the owning module or subsystem.
-- Search for an existing canonical spec.
+- If the request contains multiple requirements, decompose it into requirement items `R1..Rn` before drafting specs.
+- Identify the owning module or subsystem for each requirement item.
+- Identify the owning canonical spec for each requirement item.
+- If different requirement items map to different canonical specs, treat them as separate features.
+- Determine whether the discovered features are independent or dependency-ordered.
 - If none exists, plan a bootstrap spec for the affected area.
 
 ### Phase 1 — Spec Update
@@ -90,6 +104,7 @@ Example:
 - Keep only current behavior in the main body.
 - Add or update acceptance criteria and tests.
 - Mark the spec `DRAFT` until approved.
+- If multiple independent features were discovered, each feature gets its own spec lifecycle even if discovery was shared.
 
 ### Phase 2 — Approval
 
@@ -217,7 +232,11 @@ Every recorded hash should identify:
 
 Every feature change should be reviewed against this checklist:
 
+- [ ] `feature-development` skill used for the feature
 - [ ] Owning canonical spec identified
+- [ ] Multi-requirement requests decomposed into requirement items before spec drafting
+- [ ] Different owning specs treated as separate features
+- [ ] Dependencies analyzed to decide parallel vs sequential execution
 - [ ] Existing spec updated in place, or new spec justified
 - [ ] Spec main body reflects current truth only
 - [ ] Spec approved before implementation
