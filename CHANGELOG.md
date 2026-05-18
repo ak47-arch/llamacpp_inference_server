@@ -24,6 +24,8 @@ This file is both:
 - Added a canonical monitoring and observability spec for Prometheus metrics, readiness telemetry, and managed runtime startup instrumentation.
 - Implemented Prometheus `/metrics`, request/readiness metrics, and managed llama-server startup/restart telemetry.
 - Added a canonical spec for isolated subagent verification commands and artifact-limited verifier handoffs.
+- Recorded latest spec-verifier audit reports for the multimodal OpenAI-compatible provider and operational logging specs.
+- Those two specs remain APPROVED with documented verifier findings; they are not yet VERIFIED.
 
 ### Traceability Ledger
 

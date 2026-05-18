@@ -345,6 +345,249 @@ Invariants:
 - Docker runtime timeout tuning
 - Downloading or vendoring multimodal projector assets into the repository
 
+## Accepted Test Audit Report
+
+# Test Audit Report
+
+**Spec:** specs/openai-compatible-provider.md  
+**Tests Reviewed:** tests/test_openai_compatible_provider.py, tests/test_generic_inference_server.py, tests/test_multimodal_chat.py  
+**Red Output Reviewed:** yes  
+**Inputs provided:** spec ✓ | tests ✓ | red output ✓ | standards doc ✗  
+**Audited by:** test-verifier agent (independent session)  
+**Date:** 2026-05-18
+
+---
+
+## Requirement Coverage Matrix
+
+| ID | Requirement | Coverage Status | Evidence (file:line) | Notes |
+|---|---|---|---|---|
+| AC-1 | `service_models.yaml` includes `gemma_e4b_q4_local`. | COVERED_STRONG | `tests/test_generic_inference_server.py:51` | Direct config assertion. |
+| API-1 | `gemma_e4b_q4_local` uses `base_url: http://127.0.0.1:18014`. | COVERED_STRONG | `tests/test_generic_inference_server.py:51` | Direct config assertion. |
+| API-2 | `gemma_e4b_q4_local` managed runtime uses port `18014`. | COVERED_STRONG | `tests/test_generic_inference_server.py:51` | Direct config assertion. |
+| AC-2 | `gemma_e4b_q4_local` uses model path `/models/google_gemma-4-E4B-it-Q4_K_M.gguf`. | COVERED_STRONG | `tests/test_generic_inference_server.py:51` | Direct config assertion. |
+| AC-3 | Bundled providers keep reasoning-related `extra_args` lines commented out in `service_models.yaml`. | COVERED_STRONG | `tests/test_generic_inference_server.py:63` | Checks all listed commented lines for all bundled providers. |
+| AC-4 | Commented reasoning lines are not interpreted as active runtime arguments. | COVERED_STRONG | `tests/test_generic_inference_server.py:75` | Asserts built command omits reasoning flags/values. |
+| AC-5 | Repository tests assert bundled provider presence and commented reasoning lines. | COVERED_STRONG | `tests/test_generic_inference_server.py:51, tests/test_generic_inference_server.py:63` | The reviewed suite contains both assertions. |
+| AC-6 | Bundled example providers do not define `default_params.temperature`. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:19` | Checks bundled providers' `default_params`. |
+| AC-7 | Bundled example providers do not define `default_params.max_tokens`. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:19` | Checks bundled providers' `default_params`. |
+| RI-1 | Example config does not encode old application-specific defaults for generic use. | COVERED_WEAK | `tests/test_openai_compatible_provider.py:19` | Test enforces absence of `temperature`/`max_tokens`, but not the broader rule wording. |
+| API-3 | OpenAI-compatible provider posts to `/v1/chat/completions`. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:31` | Asserts exact request URL. |
+| API-4 | Outbound payload always includes `model`. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:31` | Direct payload assertion. |
+| API-5 | Outbound payload always includes `messages`. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:31, tests/test_openai_compatible_provider.py:182` | Covered for plain-string and structured-message paths. |
+| AC-8 | Outbound payload omits `temperature` when not explicitly configured or requested. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:31` | Direct omission assertion. |
+| AC-9 | Outbound payload omits `max_tokens` when not explicitly configured or requested. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:31` | Direct omission assertion. |
+| EC-1 | If provider config sets `temperature` and caller omits it, configured value is sent. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:55` | Direct payload assertion. |
+| EC-2 | If provider config sets `max_tokens` and caller omits it, configured value is sent. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:55` | Direct payload assertion. |
+| AC-10 | Caller-supplied `temperature` overrides provider-configured value. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:77` | Direct payload assertion. |
+| AC-11 | Caller-supplied `max_tokens` overrides provider-configured value. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:77` | Direct payload assertion. |
+| AC-12 | Provider uses a local HTTP timeout fallback when no timeout is specified. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:99` | Asserts `timeout` kwarg exists and is positive. |
+| RI-2 | `timeout_seconds` is used only as local HTTP timeout and never forwarded in outbound JSON. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:120, tests/test_openai_compatible_provider.py:140, tests/test_openai_compatible_provider.py:161` | Multiple assertions cover request, configured, and override cases. |
+| EC-3 | If provider config sets `timeout_seconds` and caller omits it, configured timeout is used. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:140` | Direct timeout assertion. |
+| EC-4 | Caller-supplied `timeout_seconds` overrides provider-configured timeout. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:161` | Direct timeout assertion. |
+| AC-13 | Service accepts string `content` in OpenAI-style messages. | COVERED_STRONG | `tests/test_multimodal_chat.py:94` | Positive path with unchanged request shape. |
+| AC-14 | Service accepts ordered structured content-part arrays using supported part types. | COVERED_STRONG | `tests/test_multimodal_chat.py:68, tests/test_multimodal_chat.py:107` | Positive image/text and audio/text structured-message paths. |
+| AC-15 | For OpenAI-compatible providers, structured `messages` are forwarded upstream unchanged rather than flattened. | COVERED_STRONG | `tests/test_multimodal_chat.py:68, tests/test_openai_compatible_provider.py:182` | Equality checks on forwarded `messages`; provider test also checks no `prompt` field in payload. |
+| API-6 | Service passes caller `temperature` and `max_tokens` through the provider seam. | COVERED_STRONG | `tests/test_multimodal_chat.py:68` | Asserts exact `params` dict at provider call site. |
+| AC-16 | Image requests to providers without active image support fail fast with `400 invalid_request` before warmup/provider invocation. | COVERED_STRONG | `tests/test_multimodal_chat.py:128` | Asserts 400, error type/message, zero warmup calls, and zero provider calls. |
+| AC-17 | Audio requests to providers without active audio support fail fast with `400 invalid_request` before warmup/provider invocation. | COVERED_STRONG | `tests/test_multimodal_chat.py:155` | Asserts 400, error type/message, zero warmup calls, and zero provider calls. |
+| API-7 | Missing `model` returns `400 invalid_request`. | COVERED_STRONG | `tests/test_multimodal_chat.py:259` | Direct service-boundary validation. |
+| API-8 | Missing `messages` returns `400 invalid_request`. | COVERED_STRONG | `tests/test_multimodal_chat.py:274` | Direct service-boundary validation. |
+| API-9 | Empty `messages` returns `400 invalid_request`. | COVERED_STRONG | `tests/test_multimodal_chat.py:286` | Direct service-boundary validation. |
+| API-10 | Non-object message items return `400 invalid_request`. | COVERED_STRONG | `tests/test_multimodal_chat.py:301` | Direct service-boundary validation. |
+| API-11 | Messages missing `role` return `400 invalid_request`. | COVERED_STRONG | `tests/test_multimodal_chat.py:316` | Direct service-boundary validation. |
+| API-12 | Messages missing `content` return `400 invalid_request`. | COVERED_STRONG | `tests/test_multimodal_chat.py:330` | Direct service-boundary validation. |
+| API-13 | Message `content` must be a string or list of content parts. | COVERED_STRONG | `tests/test_multimodal_chat.py:223` | Rejects numeric content. |
+| API-14 | Content parts must be objects. | COVERED_STRONG | `tests/test_multimodal_chat.py:241` | Rejects string list member. |
+| API-15 | `text` content parts require a `text` field. | COVERED_STRONG | `tests/test_multimodal_chat.py:344` | Direct validation assertion. |
+| API-16 | `image_url` content parts require `image_url.url`. | COVERED_STRONG | `tests/test_multimodal_chat.py:182` | Direct validation assertion. |
+| API-17 | `input_audio` content parts require `input_audio.data` and `input_audio.format`. | COVERED_STRONG | `tests/test_multimodal_chat.py:361` | Direct validation assertion. |
+| API-18 | Unknown content-part types return `400 invalid_request`. | COVERED_STRONG | `tests/test_multimodal_chat.py:200` | Rejects `video_url`. |
+| BC-1 | If `capabilities.input_modalities` is omitted, provider is treated as text-only. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:242` | Direct modality assertion. |
+| BC-2 | Invalid `input_modalities` values are rejected. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:250` | Rejects unsupported `video` modality. |
+| BC-3 | Managed local image support requires declared image capability plus a resolved projector path. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:259, tests/test_multimodal_chat.py:394` | Provider-level and service-level coverage. |
+| AC-18 | `mmproj_path_env` is preferred and `mmproj_path` is used as fallback when env is unset/empty. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:274` | Covers env-set, env-unset, and empty-string cases. |
+| AC-19 | `llama-server` command includes `--mmproj` only when a projector path resolves. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:296` | Covers env path, fallback path, and no-path cases. |
+| AC-20 | Repository does not auto-download multimodal projector assets or enable implicit network fetches. | COVERED_WEAK | `tests/test_openai_compatible_provider.py:296, tests/test_openai_compatible_provider.py:368` | Behavioral intent is targeted, but repository-wide enforcement is proxy-based and partial. |
+| OS-1 | Direct `llama_cpp_provider.py` remains text-only. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:413` | Direct modality assertion on real provider class. |
+| OS-2 | Structured multimodal requests are rejected for non-OpenAI providers at the service boundary. | COVERED_STRONG | `tests/test_multimodal_chat.py:451, tests/test_multimodal_chat.py:477` | Covered with recording non-OpenAI provider and real `LlamaCppProvider`. |
+| EC-5 | If a provider declares image capability but no projector path resolves, image requests are rejected as invalid for that provider. | COVERED_STRONG | `tests/test_multimodal_chat.py:394` | Direct service-boundary assertion. |
+| EC-6 | If request contains only string content or `text` parts, no multimodal projector is required and text-only callers still work unchanged. | COVERED_STRONG | `tests/test_multimodal_chat.py:94, tests/test_multimodal_chat.py:425` | Covers plain-string and text-part-array paths. |
+| EC-7 | `timeout_seconds` is accepted by the service and passed through to the provider params. | COVERED_STRONG | `tests/test_multimodal_chat.py:380` | Direct provider-call assertion. |
+| EC-8 | If upstream backend rejects the request, provider surfaces `ProviderUnavailableError`. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:334` | Direct exception assertion. |
+| EC-9 | If upstream backend is unreachable, provider resets managed-runtime readiness and surfaces `ProviderUnavailableError`. | COVERED_STRONG | `tests/test_openai_compatible_provider.py:349` | Direct exception and state-reset assertions. |
+
+---
+
+## Test Quality Issues
+
+TQ-1  
+Category: weak-assertion  
+Severity: medium  
+Location: `tests/test_openai_compatible_provider.py:368`  
+Reasoning: The no-auto-download requirement is asserted partly by scanning only top-level `*.py` files plus `service_models.yaml`, `Dockerfile`, and `README.md`. That does not fully exercise the repository-wide spec claim that multimodal projector assets are never auto-downloaded, so coverage for that rule is only partial.
+
+TQ-2  
+Category: flaky-risk  
+Severity: low  
+Location: `tests/test_openai_compatible_provider.py:368`  
+Reasoning: The same test fails on literal token presence in non-runtime files such as `README.md` and `Dockerfile`. Documentation or example text could trigger failure without any behavioral regression in code, reducing signal quality.
+
+TQ-3  
+Category: coverage-gap  
+Severity: low  
+Location: `tests/test_openai_compatible_provider.py:19`  
+Reasoning: The broader rule forbidding application-specific generic defaults is tested only through absence of `temperature` and `max_tokens` in bundled provider `default_params`. That directly covers the main named defaults in the spec, but only weakly covers the broader wording of the rule.
+
+---
+
+## Red-Phase Validity
+
+Status: VALID_RED  
+Evidence: The failures are feature-aligned red failures, not infrastructure failures. Examples from the provided output include: `TypeError: OpenAICompatibleProvider.complete() got an unexpected keyword argument 'messages'`, `TypeError: OpenAICompatibleProvider.__init__() got an unexpected keyword argument 'input_modalities'`, `AttributeError: 'OpenAICompatibleProvider' object has no attribute 'supported_input_modalities'`, `AssertionError: '--mmproj' not found in [...]`, and multiple service-boundary expectation failures such as `AssertionError: 200 != 400` for unsupported multimodal and invalid payload cases. The single Flask `500` trace terminates in the test's own sentinel `AssertionError("complete should not be called")`, which indicates missing fail-fast validation rather than an unrelated harness or environment problem.
+
+---
+
+## Summary Verdict
+
+**TEST GAPS** - one or more requirements are MISSING/COVERED_WEAK/MISALIGNED.
+
+Unverifiable items:
+- None
+
+---
+
+*This report is read-only. No code changes have been made.*
+
+## Latest Spec Audit Report
+
+# Spec Audit Report
+
+**Spec:** `specs/openai-compatible-provider.md`  
+**Diff reviewed:** `/tmp/spec_feature_a.diff`  
+**Inputs provided:** spec ✓ | diff ✓ | process doc ✗ | additional context ✗  
+**Audited by:** spec-verifier agent (independent session)  
+**Date:** 2026-05-18
+
+---
+
+Mapping note: duplicated requirements across Current Behavior, Interfaces, Data Model, Rules/Invariants, Edge Cases, Acceptance Criteria, Test Plan, and Out of Scope were consolidated into unique criteria IDs below.
+
+## Spec Compliance
+
+| ID | Section | Criterion | Status | Evidence (file:line) | Notes |
+|---|---|---|---|---|---|
+| CFG-1 | Bundled example provider set | Bundled provider registry includes `gemma_e2b_local`, `gemma_e4b_local`, and `gemma_e4b_q4_local` | MET | `service_models.yaml:4,32,60`; `tests/test_generic_inference_server.py:51` | All three ids present |
+| CFG-2 | Bundled example provider set / Data Model | `gemma_e4b_q4_local` uses `base_url http://127.0.0.1:18014`, `port 18014`, and model path `/models/google_gemma-4-E4B-it-Q4_K_M.gguf` | MET | `service_models.yaml:68,71,73`; `tests/test_generic_inference_server.py:59-61` | Matches spec |
+| CFG-3 | Commented reasoning example lines | Bundled providers keep reasoning-related `extra_args` lines commented out | MET | `service_models.yaml:23-28,51-56,79-84`; `tests/test_generic_inference_server.py:63` | Comment markers preserved |
+| CFG-4 | Commented reasoning example lines | Commented reasoning lines are not treated as active runtime arguments | MET | `local_server_runtime.py:94-96`; `tests/test_generic_inference_server.py:75` | Runtime only appends actual `extra_args` list items |
+| CFG-5 | Rules / Acceptance Criteria | Bundled example providers do not encode generic `temperature`/`max_tokens` defaults; bundled `default_params` are limited to `timeout_seconds` | MET | `service_models.yaml:29-30,57-58,86-87`; `tests/test_openai_compatible_provider.py:19-29` | No bundled sampling defaults present |
+| INT-1 | Provider configuration | If `capabilities.input_modalities` is omitted, provider is text-only; allowed values are only `text`, `image`, `audio` | MET | `openai_compatible_provider.py:39-43,70-74`; `router.py:63`; `tests/test_openai_compatible_provider.py:242,250` | Default and validation both implemented |
+| PAY-1 | Outbound payload | OpenAI-compatible provider sends `POST /v1/chat/completions` and always includes `model` and `messages` | MET | `openai_compatible_provider.py:98-114`; `tests/test_openai_compatible_provider.py:31-53` | Exact path and payload asserted |
+| PAY-2 | Rules / Edge Cases | `temperature` is omitted when unspecified and included when explicitly configured/requested | MET | `openai_compatible_provider.py:86,102-103`; `tests/test_openai_compatible_provider.py:31-53,55-75` | Conditional payload population present |
+| PAY-3 | Rules / Edge Cases | `max_tokens` is omitted when unspecified and included when explicitly configured/requested | MET | `openai_compatible_provider.py:86,104-105`; `tests/test_openai_compatible_provider.py:31-53,55-75` | Conditional payload population present |
+| PAY-4 | Rules / Edge Cases | Caller-supplied `temperature` and `max_tokens` override provider defaults | MET | `openai_compatible_provider.py:86,102-105`; `tests/test_openai_compatible_provider.py:77-97` | Merge order gives request precedence |
+| PAY-5 | Rules / Edge Cases | `timeout_seconds` is used only as local HTTP timeout, never forwarded upstream, and a built-in/configured timeout applies when omitted by caller | MET | `openai_compatible_provider.py:86,107-114`; `tests/test_openai_compatible_provider.py:99-159` | Outbound JSON never includes `timeout_seconds` |
+| PAY-6 | Rules / Edge Cases | Caller-supplied `timeout_seconds` overrides provider-configured timeout | MET | `openai_compatible_provider.py:86,107-114`; `tests/test_openai_compatible_provider.py:161-180` | Same merge order applies to timeout |
+| API-1 | Inbound request schema | Service requires `model` and a non-empty `messages` list | MET | `service_app.py:152-158,317`; `tests/test_multimodal_chat.py:259,274,286` | Missing/empty cases return 400 |
+| API-2 | Inbound request schema | Each message must be an object containing `role` and `content` | MET | `service_app.py:79-87,317`; `tests/test_multimodal_chat.py:301,316,330` | Validation is explicit |
+| API-3 | Inbound request schema | Message `content` may be a string or a list of content-part objects | MET | `service_app.py:89-99,24,317`; `tests/test_multimodal_chat.py:94,223,241` | Positive and negative paths covered |
+| API-4 | Inbound request schema | Supported structured content-part types are `text`, `image_url`, and `input_audio`; unknown types are rejected | MET | `service_app.py:15,27-28,317`; `tests/test_multimodal_chat.py:68,107,200` | Allowed set matches spec |
+| API-5 | Inbound request schema | `text` content parts require a `text` field | MET | `service_app.py:30-33,317`; `tests/test_multimodal_chat.py:344-359` | Direct validation |
+| API-6 | Inbound request schema | `image_url` content parts require `image_url.url` | MET | `service_app.py:34-38,317`; `tests/test_multimodal_chat.py:182-197` | Direct validation |
+| API-7 | Inbound request schema | `input_audio` content parts require `input_audio.data` and `input_audio.format` | MET | `service_app.py:39-49,317`; `tests/test_multimodal_chat.py:361-378` | Direct validation |
+| MOD-1 | Current Behavior / Acceptance Criteria | For OpenAI-compatible providers, structured `messages` are forwarded upstream unchanged instead of being flattened | MET | `service_app.py:188-190`; `openai_compatible_provider.py:88-105`; `tests/test_multimodal_chat.py:68-92`; `tests/test_openai_compatible_provider.py:182-211` | Service and provider preserve structure |
+| MOD-2 | Current Behavior / Invariants | Existing string-content callers continue to work unchanged | MET | `service_app.py:90-93,188-190`; `tests/test_multimodal_chat.py:94-105` | String path still accepted and forwarded |
+| MOD-3 | Current Behavior | Valid structured audio messages pass through when audio support is active | MET | `service_app.py:160-176,188-190`; `openai_compatible_provider.py:98-105`; `tests/test_multimodal_chat.py:107-126`; `tests/test_openai_compatible_provider.py:213-240` | Positive audio path present |
+| MOD-4 | Acceptance Criteria / Edge Cases | Image requests to a provider without active image support fail fast with `400 invalid_request` before warmup/provider invocation | MET | `service_app.py:170-176,317`; `tests/test_multimodal_chat.py:128-153` | Test asserts 400 and zero warmup/provider calls |
+| MOD-5 | Acceptance Criteria / Edge Cases | Audio requests to a provider without active audio support fail fast with `400 invalid_request` before warmup/provider invocation | MET | `service_app.py:170-176,317`; `tests/test_multimodal_chat.py:155-180` | Test asserts 400 and zero warmup/provider calls |
+| MOD-6 | Current Behavior / Out of Scope | Structured multimodal support is limited to the OpenAI-compatible path; non-OpenAI providers and direct `llama_cpp_provider.py` remain text-only at the service boundary | MET | `service_app.py:167-168,190-192`; `provider_base.py:29-31`; `tests/test_multimodal_chat.py:452-476,478-500`; `tests/test_openai_compatible_provider.py:413-419` | Non-OpenAI structured requests rejected |
+| MM-1 | Data Model / Edge Cases | Managed local image support requires declared `image` capability plus a resolved projector path | MET | `openai_compatible_provider.py:70-74`; `router.py:63`; `tests/test_openai_compatible_provider.py:259-272`; `tests/test_multimodal_chat.py:394-423` | Active image modality is gated |
+| MM-2 | Managed server fields | `mmproj_path_env` is preferred; `mmproj_path` is used as fallback when env is unset/empty | MET | `openai_compatible_provider.py:60-68`; `local_server_runtime.py:35-44`; `tests/test_openai_compatible_provider.py:274-294` | Preference order matches spec |
+| MM-3 | Acceptance Criteria | `llama-server` command includes `--mmproj <path>` only when a projector path resolves | MET | `local_server_runtime.py:90-92`; `tests/test_openai_compatible_provider.py:296-332` | Conditional flag insertion present |
+| ERR-1 | Edge Cases | If the upstream backend rejects the request, provider surfaces `ProviderUnavailableError` | MET | `openai_compatible_provider.py:136-140`; `tests/test_openai_compatible_provider.py:334-347` | Non-200 path raises unavailable |
+| ERR-2 | Edge Cases | If the upstream backend is unreachable, provider resets managed-runtime readiness and surfaces `ProviderUnavailableError` | MET | `openai_compatible_provider.py:124-128`; `tests/test_openai_compatible_provider.py:349-366` | Readiness reset is explicit |
+| OS-1 | Out of Scope | No routing-policy changes, backend-sampling standardization, or Docker-timeout tuning scope creep is introduced by this feature | MET | `router.py:63`; `openai_compatible_provider.py:102-107` | Diff adds capability wiring and conditional forwarding only |
+| OS-2 | Out of Scope | Monitoring/observability features are out of scope and should not be introduced by this feature | MISSING | `service_app.py:16,56,66`; `local_server_runtime.py:14,134,170,183,196,218,236`; `openai_compatible_provider.py:117,126,137,149`; `llama_cpp_provider.py:73,84,97` | New logging and monitoring instrumentation were added |
+| OS-3 | Out of Scope | Repository must not auto-download or vendor/store multimodal projector artifacts | MET | `local_server_runtime.py:35-44,90-92`; `service_models.yaml:21,49,77`; `tests/test_openai_compatible_provider.py:296-332,368-411` | Diff uses only explicit paths/env overrides; no fetch behavior added |
+
+---
+
+## Test-Spec Alignment
+
+| ID | Spec Criterion | Test Location | Alignment | Gap |
+|---|---|---|---|---|
+| TSA-1 | CFG-1 bundled provider ids present | `tests/test_generic_inference_server.py:51` | ALIGNED | — |
+| TSA-2 | CFG-2 `gemma_e4b_q4_local` base_url/port/model_path | `tests/test_generic_inference_server.py:51` | ALIGNED | — |
+| TSA-3 | CFG-3 reasoning lines remain commented | `tests/test_generic_inference_server.py:63` | ALIGNED | — |
+| TSA-4 | CFG-4 commented reasoning lines not active at runtime | `tests/test_generic_inference_server.py:75` | ALIGNED | — |
+| TSA-5 | CFG-5 bundled defaults omit generic sampling defaults | `tests/test_openai_compatible_provider.py:19` | ALIGNED | — |
+| TSA-6 | INT-1 text-only default + invalid modality rejection | `tests/test_openai_compatible_provider.py:242,250` | ALIGNED | — |
+| TSA-7 | PAY-1 outbound POST includes path/model/messages | `tests/test_openai_compatible_provider.py:31` | ALIGNED | — |
+| TSA-8 | PAY-2 conditional `temperature` omission/inclusion | `tests/test_openai_compatible_provider.py:31,55` | ALIGNED | — |
+| TSA-9 | PAY-3 conditional `max_tokens` omission/inclusion | `tests/test_openai_compatible_provider.py:31,55` | ALIGNED | — |
+| TSA-10 | PAY-4 caller overrides configured sampling params | `tests/test_openai_compatible_provider.py:77` | ALIGNED | — |
+| TSA-11 | PAY-5 timeout local-only and fallback/configured application | `tests/test_openai_compatible_provider.py:99,120,140` | ALIGNED | — |
+| TSA-12 | PAY-6 caller timeout overrides configured timeout | `tests/test_openai_compatible_provider.py:161` | ALIGNED | — |
+| TSA-13 | API-1 `model` and non-empty `messages` required | `tests/test_multimodal_chat.py:259,274,286` | ALIGNED | — |
+| TSA-14 | API-2 each message must be object with `role` and `content` | `tests/test_multimodal_chat.py:301,316,330` | ALIGNED | — |
+| TSA-15 | API-3 content must be string or list of part objects | `tests/test_multimodal_chat.py:94,223,241` | ALIGNED | — |
+| TSA-16 | API-4 supported part types only; unknown rejected | `tests/test_multimodal_chat.py:68,107,200` | ALIGNED | — |
+| TSA-17 | API-5 text parts require `text` | `tests/test_multimodal_chat.py:344` | ALIGNED | — |
+| TSA-18 | API-6 image parts require `image_url.url` | `tests/test_multimodal_chat.py:182` | ALIGNED | — |
+| TSA-19 | API-7 audio parts require `data` and `format` | `tests/test_multimodal_chat.py:361` | ALIGNED | — |
+| TSA-20 | MOD-1 structured messages preserved unchanged upstream | `tests/test_multimodal_chat.py:68`; `tests/test_openai_compatible_provider.py:182` | ALIGNED | — |
+| TSA-21 | MOD-2 string-content callers remain supported | `tests/test_multimodal_chat.py:94` | ALIGNED | — |
+| TSA-22 | MOD-3 valid structured audio pass-through | `tests/test_multimodal_chat.py:107`; `tests/test_openai_compatible_provider.py:213` | ALIGNED | — |
+| TSA-23 | MOD-4 unsupported image input fails fast before warmup/provider call | `tests/test_multimodal_chat.py:128` | ALIGNED | — |
+| TSA-24 | MOD-5 unsupported audio input fails fast before warmup/provider call | `tests/test_multimodal_chat.py:155` | ALIGNED | — |
+| TSA-25 | MOD-6 multimodal limited to OpenAI-compatible path; direct llama_cpp remains text-only | `tests/test_multimodal_chat.py:452,478`; `tests/test_openai_compatible_provider.py:413` | ALIGNED | — |
+| TSA-26 | MM-1 image capability requires resolved projector path | `tests/test_openai_compatible_provider.py:259`; `tests/test_multimodal_chat.py:394` | ALIGNED | — |
+| TSA-27 | MM-2 `mmproj_path_env` preferred, fallback to `mmproj_path` | `tests/test_openai_compatible_provider.py:274` | ALIGNED | — |
+| TSA-28 | MM-3 `--mmproj` only when path resolves | `tests/test_openai_compatible_provider.py:296` | ALIGNED | — |
+| TSA-29 | ERR-1 upstream non-200 -> `ProviderUnavailableError` | `tests/test_openai_compatible_provider.py:334` | ALIGNED | — |
+| TSA-30 | ERR-2 unreachable upstream resets readiness and raises unavailable | `tests/test_openai_compatible_provider.py:349` | ALIGNED | — |
+| TSA-31 | OS-1 no routing/sampling/Docker timeout scope creep | — | ABSENT | No test asserts routing policy, backend-sampling semantics, or Docker timeout behavior stayed untouched |
+| TSA-32 | OS-2 monitoring/observability remains out of scope | — | ABSENT | No test guards against observability code being added |
+| TSA-33 | OS-3 no projector auto-download or vendored/storage behavior | `tests/test_openai_compatible_provider.py:368` | SHALLOW | The test uses token scanning over a limited file subset plus mocked network calls. It does not fully validate repository-wide absence of download/storage behavior, so the exclusion could be violated outside the scanned paths while the test still passes. |
+
+---
+
+## Code Quality Issues
+
+CQ-1  
+Category: logic error  
+Severity: high  
+Location: `local_server_runtime.py:121-140`, `local_server_runtime.py:184-189`, `local_server_runtime.py:195`, `local_server_runtime.py:217`  
+Reasoning: `_forward_child_logs()` iterates over `stdout` and `stderr` until EOF. `ensure_managed_server()` calls it immediately after readiness succeeds and also on failure before terminating the child. A managed `llama-server` is a long-lived process whose pipes normally remain open, so these iterations can block indefinitely. The launch path can therefore hang after the server becomes ready, and the failure path can hang before cleanup. Because the subprocess is also created with `stdout/stderr=PIPE`, the child can additionally stall later if it keeps writing logs and nothing drains the pipes asynchronously.
+
+CQ-2  
+Category: logic error  
+Severity: high  
+Location: `service_app.py:109-111`, `service_app.py:113-148`  
+Reasoning: `LLMServiceRuntime` still stores `_last_probe_ok`, `_last_probe_at`, and `_probe_ttl_seconds`, and it still updates those values at the end of `readiness()`, but the fast-path cache check is gone. Every `/ready` request now warms up every provider and performs an actual completion probe. Under normal health-check traffic this makes readiness far more expensive and can cause avoidable probe failures or latency spikes, especially for managed local providers.
+
+---
+
+## Summary Verdict
+
+**SPEC GAPS + QUALITY ISSUES + TEST DRIFT**
+
+**Spec gaps**
+- `OS-2`: out-of-scope monitoring/observability code was added in `service_app.py`, `local_server_runtime.py`, `openai_compatible_provider.py`, and `llama_cpp_provider.py`
+
+**Quality issues**
+- `CQ-1` (high): managed server startup can block indefinitely while draining live child pipes
+- `CQ-2` (high): `/ready` now re-probes every provider on every request because the TTL cache is no longer used
+
+**Test drift**
+- `TSA-33`: the no-auto-download/no-vendoring guard is shallow and only partially validates the exclusion
+
+UNVERIFIABLE items requiring manual check:
+- None
+
+*"This report is read-only. No code changes have been made."*
+
 ## Traceability
 
 Append only non-traceability commit hashes here. Traceability-only commits do not record themselves.
