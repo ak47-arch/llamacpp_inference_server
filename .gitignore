@@ -5,8 +5,11 @@ __pycache__/
 # Local virtualenv
 .venv/
 
-# Local model files
-gemma/gemma-4-E4B-it-UD-IQ2_M.gguf
-gemma/google_gemma-4-E2B-it-IQ2_M.gguf
-gemma/google_gemma-4-E2B-it-Q4_K_M.gguf
-gemma/google_gemma-4-E4B-it-Q4_K_M.gguf
+# Local model and projector files
+# gemma/gemma-4-E4B-it-UD-IQ2_M.gguf
+# gemma/google_gemma-4-E2B-it-IQ2_M.gguf
+# gemma/google_gemma-4-E2B-it-Q4_K_M.gguf
+# gemma/google_gemma-4-E4B-it-Q4_K_M.gguf
+# gemma/mmproj-google_gemma-4-E2B-it-f16.gguf
+# gemma/mmproj-google_gemma-4-E4B-it-f16.gguf
+gemma/*.gguf

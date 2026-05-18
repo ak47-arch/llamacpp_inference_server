@@ -3,6 +3,7 @@
 import logging
 import os
 import subprocess
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -118,26 +119,37 @@ def _sanitize_child_log_line(line: str) -> str | None:
     return sanitized
 
 
-def _forward_child_logs(process: subprocess.Popen, model: str, base_url: str) -> None:
+def _forward_child_stream(stream, stream_name: str, model: str, base_url: str) -> None:
+    if stream is None:
+        return
+    try:
+        iterator = iter(stream)
+    except TypeError:
+        return
+    for raw_line in iterator:
+        sanitized = _sanitize_child_log_line(raw_line)
+        if sanitized is None:
+            continue
+        _RUNTIME_LOGGER.info(
+            "event=child_log model=%s base_url=%s stream=%s message=%s",
+            model,
+            base_url,
+            stream_name,
+            sanitized,
+        )
+
+
+def _start_child_log_forwarders(process: subprocess.Popen, model: str, base_url: str) -> None:
     for stream_name in ("stdout", "stderr"):
         stream = getattr(process, stream_name, None)
         if stream is None:
             continue
-        try:
-            iterator = iter(stream)
-        except TypeError:
-            continue
-        for raw_line in iterator:
-            sanitized = _sanitize_child_log_line(raw_line)
-            if sanitized is None:
-                continue
-            _RUNTIME_LOGGER.info(
-                "event=child_log model=%s base_url=%s stream=%s message=%s",
-                model,
-                base_url,
-                stream_name,
-                sanitized,
-            )
+        thread = threading.Thread(
+            target=_forward_child_stream,
+            args=(stream, stream_name, model, base_url),
+            daemon=True,
+        )
+        thread.start()
 
 
 def _wait_for_server(base_url: str, timeout_seconds: float) -> None:
@@ -188,11 +200,11 @@ def ensure_managed_server(
         text=True,
         start_new_session=True,
     )
+    _start_child_log_forwarders(process, metric_model, base_url)
     try:
         _wait_for_server(base_url, (server_config or {}).get("startup_timeout_seconds", 30))
     except Exception:
         duration_seconds = time.monotonic() - start
-        _forward_child_logs(process, metric_model, base_url)
         _RUNTIME_LOGGER.info(
             "event=failure model=%s base_url=%s duration_seconds=%.6f error_class=unavailable",
             metric_model,
@@ -214,7 +226,6 @@ def ensure_managed_server(
         raise
 
     duration_seconds = time.monotonic() - start
-    _forward_child_logs(process, metric_model, base_url)
     _RUNTIME_LOGGER.info(
         "event=ready model=%s base_url=%s duration_seconds=%.6f",
         metric_model,

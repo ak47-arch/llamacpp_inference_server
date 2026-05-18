@@ -1,5 +1,6 @@
 import io
 import sys
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -62,6 +63,18 @@ class UnhandledRuntime:
 
     def complete_chat(self, payload: dict):
         raise Exception("boom")
+
+
+class BlockingStream:
+    def __init__(self):
+        self._wait_forever = threading.Event()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self._wait_forever.wait()
+        raise StopIteration
 
 
 class OperationalLoggingTests(unittest.TestCase):
@@ -234,6 +247,38 @@ class OperationalLoggingTests(unittest.TestCase):
                 for line in captured.output
             )
         )
+
+    def test_ensure_managed_server_returns_without_waiting_for_child_log_eof(self):
+        process = Mock()
+        process.poll.return_value = None
+        process.stdout = BlockingStream()
+        process.stderr = BlockingStream()
+        done = threading.Event()
+        errors = []
+
+        def target():
+            try:
+                with patch.object(local_server_runtime, "_server_is_ready", return_value=False), patch.object(
+                    local_server_runtime, "_wait_for_server", return_value=None
+                ), patch.object(local_server_runtime.subprocess, "Popen", return_value=process):
+                    local_server_runtime.ensure_managed_server(
+                        base_url="http://127.0.0.1:18012",
+                        binary_path="/opt/llama-cpp/llama-server",
+                        model_path="/models/model.gguf",
+                        model_name="gemma_e2b_local",
+                        model_id="gemma_e2b_local",
+                        server_config={},
+                        default_params={},
+                    )
+            except Exception as exc:  # pragma: no cover - assertion path only
+                errors.append(exc)
+            finally:
+                done.set()
+
+        worker = threading.Thread(target=target, daemon=True)
+        worker.start()
+        self.assertTrue(done.wait(0.5), "ensure_managed_server should not wait for child log EOF")
+        self.assertEqual(errors, [])
 
     def test_sensitive_child_lines_are_dropped_during_forwarding(self):
         process = Mock()

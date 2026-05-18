@@ -16,16 +16,27 @@ This file is both:
 
 ### Summary
 
+- No unreleased changes.
+
+## v0.1.0 - 2026-05-19
+
+### Summary
+
 - Workflow documentation migrated to living canonical specs with append-only commit-hash traceability.
 - Added the canonical spec, template, workflow guide, README pointers, and Pi workflow updates for feature development.
 - Feature work now hard-requires the `feature-development` skill, with multi-requirement decomposition and dependency planning rules.
 - Added a canonical spec for bundled OpenAI-compatible provider config and request-defaulting behavior.
 - Bundled provider config now includes E4B Q4, keeps reasoning flags commented out, and no longer injects implicit temperature/max_tokens defaults.
+- Added structured multimodal chat pass-through for OpenAI-compatible providers, including image/audio content-part validation and fail-fast modality checks.
+- Added explicit managed `llama-server` `mmproj` wiring for bundled Gemma Q4 image-capable providers.
+- Validated image inference end-to-end for `gemma_e2b_local` and `gemma_e4b_q4_local` with configured projector files.
 - Added a canonical monitoring and observability spec for Prometheus metrics, readiness telemetry, and managed runtime startup instrumentation.
 - Implemented Prometheus `/metrics`, request/readiness metrics, and managed llama-server startup/restart telemetry.
+- Added safe operational logging for service access/failure summaries and managed runtime lifecycle events.
+- Fixed managed runtime child-log forwarding so startup no longer blocks waiting for child log EOF.
 - Added a canonical spec for isolated subagent verification commands and artifact-limited verifier handoffs.
+- Implemented local isolated verifier commands for `module-boundary`, `spec-verifier`, and `test-verifier`.
 - Recorded latest spec-verifier audit reports for the multimodal OpenAI-compatible provider and operational logging specs.
-- Those two specs remain APPROVED with documented verifier findings; they are not yet VERIFIED.
 
 ### Traceability Ledger
 

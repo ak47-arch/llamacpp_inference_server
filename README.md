@@ -7,6 +7,9 @@ It provides:
 - role-aware routing with fallback support
 - managed local `llama-server` lifecycle
 - an OpenAI-compatible `POST /v1/chat/completions` endpoint
+- structured multimodal OpenAI-style message support for configured OpenAI-compatible providers
+- Prometheus-compatible `GET /metrics`
+- safe operational logging to stdout/stderr for service and managed runtime flows
 - Docker packaging for standalone deployment
 
 ## Repository layout
@@ -49,6 +52,7 @@ Starts and manages local `llama-server` processes on demand.
 Flask application exposing:
 - `GET /health`
 - `GET /ready`
+- `GET /metrics`
 - `POST /v1/chat/completions`
 
 ## Configuration
@@ -58,7 +62,22 @@ The server reads provider definitions from `service_models.yaml`.
 Current defaults assume:
 - model files mounted at `/models`
 - `llama.cpp` binaries mounted at `/opt/llama-cpp`
-- managed local runtimes listening on ports `18012` and `18013`
+- managed local runtimes listening on ports `18012`, `18013`, and `18014`
+
+Bundled OpenAI-compatible local providers:
+- `gemma_e2b_local`
+- `gemma_e4b_local`
+- `gemma_e4b_q4_local`
+
+For image input, the managed runtime also needs a matching multimodal projector (`mmproj`) file.
+The checked-in `docker-compose.yml` now expects:
+- `/models/mmproj-google_gemma-4-E2B-it-f16.gguf`
+- `/models/mmproj-google_gemma-4-E4B-it-f16.gguf`
+
+via these environment variables:
+- `GEMMA_E2B_LOCAL_MMPROJ_PATH`
+- `GEMMA_E4B_LOCAL_MMPROJ_PATH`
+- `GEMMA_E4B_Q4_LOCAL_MMPROJ_PATH`
 
 ## Local run
 
@@ -82,14 +101,16 @@ python -m llm.service_app
 Build and run with Docker Compose:
 
 ```bash
-docker compose up --build
+docker-compose up --build
 ```
 
 Compose expects:
 - `./gemma` mounted to `/models`
 - `LLAMA_CPP_DIR` pointing to a directory that contains `llama-server`
+- matching `mmproj` files present in `./gemma` for image-capable providers
 
 The container serves traffic on port `8012`.
+Service access logs, failure summaries, and managed runtime lifecycle logs are emitted to stdout/stderr.
 
 ## API
 
@@ -111,6 +132,12 @@ Example response:
 curl http://127.0.0.1:8012/ready
 ```
 
+### Metrics
+
+```bash
+curl http://127.0.0.1:8012/metrics
+```
+
 ### Chat completions
 
 ```bash
@@ -126,6 +153,35 @@ curl -X POST http://127.0.0.1:8012/v1/chat/completions \
     "max_tokens": 32
   }'
 ```
+
+Structured multimodal requests use standard OpenAI-style content arrays:
+
+```bash
+curl -X POST http://127.0.0.1:8012/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "gemma_e4b_q4_local",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {"type": "text", "text": "What is in this image? Reply briefly."},
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/png;base64,<BASE64_PNG>"
+            }
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+Notes:
+- image/audio structured content is supported only for configured OpenAI-compatible providers
+- image requests fail fast with `400 invalid_request` when the selected provider has no active projector support
+- very small images can fail inside `llama.cpp`; use images of at least a few pixels in each dimension for manual smoke tests
 
 ## Development workflow
 
