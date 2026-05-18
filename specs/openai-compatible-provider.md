@@ -596,6 +596,7 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 
 - 2026-05-17 | 0affeba38d2f6c8f7cfe1652875649d54e8d8e40 | consolidate bundled provider config and defaulting rules into canonical spec
 - 2026-05-17 | bc6b4c9b70a7bd418991d808765f54210e60fc93 | add multimodal pass-through and managed projector configuration to canonical spec
+- 2026-05-18 | 6f2f3e924021d83048462b5e4353ac924a7207d0 | record accepted test audit and failed spec audit reports for multimodal provider work
 
 ### Implementation Commits
 

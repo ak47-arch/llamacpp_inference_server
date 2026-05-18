@@ -40,3 +40,5 @@ This file is both:
 - 2026-05-17 | spec: specs/subagents.md | kind: spec | commit: ec7e0e02196dddeb848d84e8a88baaf474fe5868 | summary: add canonical isolated subagent verification commands spec
 - 2026-05-17 | spec: specs/openai-compatible-provider.md | kind: spec | commit: bc6b4c9b70a7bd418991d808765f54210e60fc93 | summary: add multimodal pass-through and managed projector configuration to canonical spec
 - 2026-05-17 | spec: specs/operational-logging.md | kind: spec | commit: 46e4e3fbf081af3ff6e11954031464a04ad8c8e3 | summary: add canonical operational logging spec
+- 2026-05-18 | spec: specs/openai-compatible-provider.md | kind: spec | commit: 6f2f3e924021d83048462b5e4353ac924a7207d0 | summary: record multimodal provider verifier audit reports and status note
+- 2026-05-18 | spec: specs/operational-logging.md | kind: spec | commit: 6f2f3e924021d83048462b5e4353ac924a7207d0 | summary: record operational logging verifier audit reports and status note
