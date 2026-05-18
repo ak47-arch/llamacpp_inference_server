@@ -9,7 +9,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT.parent))
 
-from llm import service_app  # noqa: E402
+from llm import local_server_runtime, service_app  # noqa: E402
 
 
 class GenericInferenceServerTests(unittest.TestCase):
@@ -48,22 +48,48 @@ class GenericInferenceServerTests(unittest.TestCase):
         self.assertNotIn("COPY llm/ ./llm/", content)
         self.assertNotIn("COPY config/ ./config/", content)
 
-    def test_service_models_declares_e4b_q4_provider(self):
+    def test_service_models_declare_expected_bundled_openai_providers(self):
         config = yaml.safe_load((REPO_ROOT / "service_models.yaml").read_text())
         provider_ids = {provider["id"] for provider in config["providers"]}
+        self.assertIn("gemma_e2b_local", provider_ids)
+        self.assertIn("gemma_e4b_local", provider_ids)
         self.assertIn("gemma_e4b_q4_local", provider_ids)
 
         provider = next(provider for provider in config["providers"] if provider["id"] == "gemma_e4b_q4_local")
+        self.assertEqual(provider["connection"]["base_url"], "http://127.0.0.1:18014")
+        self.assertEqual(provider["connection"]["managed_server"]["port"], 18014)
         self.assertEqual(provider["connection"]["managed_server"]["model_path"], "/models/google_gemma-4-E4B-it-Q4_K_M.gguf")
 
     def test_service_models_comments_out_reasoning_arguments(self):
-        lines = (REPO_ROOT / "service_models.yaml").read_text().splitlines()
-        self.assertEqual(sum(line == "#          - --reasoning" for line in lines), 3)
-        self.assertEqual(sum(line == "#          - \"off\"" for line in lines), 3)
-        self.assertEqual(sum(line == "#          - --reasoning-budget" for line in lines), 3)
-        self.assertEqual(sum(line == "#          - \"0\"" for line in lines), 3)
-        self.assertEqual(sum(line == "#          - --reasoning-format" for line in lines), 3)
-        self.assertEqual(sum(line == "#          - none" for line in lines), 3)
+        content = (REPO_ROOT / "service_models.yaml").read_text()
+        for provider_id in ("gemma_e2b_local", "gemma_e4b_local", "gemma_e4b_q4_local"):
+            block = content.split(f"- id: {provider_id}", 1)[1]
+            block = block.split("\n  - id:", 1)[0]
+            self.assertIn("#          - --reasoning", block)
+            self.assertIn('#          - "off"', block)
+            self.assertIn("#          - --reasoning-budget", block)
+            self.assertIn('#          - "0"', block)
+            self.assertIn("#          - --reasoning-format", block)
+            self.assertIn("#          - none", block)
+
+    def test_commented_reasoning_lines_do_not_become_active_runtime_arguments(self):
+        config = yaml.safe_load((REPO_ROOT / "service_models.yaml").read_text())
+        provider = next(provider for provider in config["providers"] if provider["id"] == "gemma_e2b_local")
+        command = local_server_runtime._build_server_command(
+            binary_path=provider["connection"]["managed_server"]["binary_path"],
+            model_path=provider["connection"]["managed_server"]["model_path"],
+            model_name=provider["model_name"],
+            base_url=provider["connection"]["base_url"],
+            server_config=provider["connection"]["managed_server"],
+            default_params=provider.get("default_params", {}),
+        )
+
+        self.assertNotIn("--reasoning", command)
+        self.assertNotIn("--reasoning-budget", command)
+        self.assertNotIn("--reasoning-format", command)
+        self.assertNotIn("off", command)
+        self.assertNotIn("0", command)
+        self.assertNotIn("none", command)
 
 
 if __name__ == "__main__":

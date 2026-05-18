@@ -20,6 +20,14 @@ class DummyRuntime:
         raise AssertionError("complete_chat should not be called in this test")
 
 
+class ExplodingRuntime:
+    def readiness(self):
+        return {"ready": True, "models": []}
+
+    def complete_chat(self, payload: dict):
+        raise Exception("boom")
+
+
 class StubProvider:
     def __init__(self, model_id: str, provider_name: str = "stub_provider", text: str = "ok"):
         self.model_id = model_id
@@ -37,13 +45,22 @@ class StubProvider:
             raise self.raise_exc
 
     def complete(self, prompt: str, system: str = "", params: dict | None = None):
+        start = service_app.time.monotonic()
         self.complete_calls += 1
         if self.block_started is not None:
             self.block_started.set()
         if self.block_release is not None:
             self.block_release.wait(timeout=5)
         if self.raise_exc is not None:
+            monitoring.observe_current_chat_provider_duration(
+                outcome=monitoring.classify_exception(self.raise_exc),
+                duration_seconds=service_app.time.monotonic() - start,
+            )
             raise self.raise_exc
+        monitoring.observe_current_chat_provider_duration(
+            outcome="success",
+            duration_seconds=service_app.time.monotonic() - start,
+        )
         return CompletionResult(
             text=self.text,
             model_id=self.model_id,
@@ -82,7 +99,7 @@ class MonitoringSpecTests(unittest.TestCase):
         pattern = rf"{re.escape(metric_name)}\{{{re.escape(label_text)}\}} {value_pattern}"
         self.assertRegex(body, pattern)
 
-    def test_metrics_endpoint_returns_prometheus_text_and_is_not_self_counted(self):
+    def test_metrics_endpoint_returns_all_metric_families_and_is_not_self_counted(self):
         app = self._create_app()
 
         response = app.test_client().get("/metrics")
@@ -90,9 +107,43 @@ class MonitoringSpecTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/plain", response.content_type)
         body = response.data.decode()
-        self.assertIn("# HELP llm_service_requests_total", body)
-        self.assertIn("# HELP llm_service_request_duration_seconds", body)
+        for metric_name in (
+            "llm_service_requests_total",
+            "llm_service_in_flight_requests",
+            "llm_service_request_duration_seconds",
+            "llm_service_provider_duration_seconds",
+            "llm_service_readiness_checks_total",
+            "llm_service_readiness_duration_seconds",
+            "llm_service_managed_server_startups_total",
+            "llm_service_managed_server_startup_duration_seconds",
+            "llm_service_managed_server_restarts_total",
+        ):
+            self.assertIn(f"# HELP {metric_name}", body)
         self.assertNotIn('route="/metrics"', body)
+        self.assertNotIn("request_id", body)
+        self.assertNotIn("prompt_fingerprint", body)
+        self.assertNotIn("exception_message", body)
+
+    def test_reset_metrics_clears_previous_observations(self):
+        app = self._create_app()
+
+        response = app.test_client().get("/health")
+
+        self.assertEqual(response.status_code, 200)
+        body = self._metrics_text(app)
+        self._assert_metric_value(
+            body,
+            "llm_service_requests_total",
+            route="/health",
+            model="none",
+            provider="none",
+            outcome="success",
+        )
+
+        monitoring.reset_metrics()
+
+        cleared_body = self._metrics_text(app)
+        self.assertNotIn('route="/health"', cleared_body)
 
     def test_health_route_emits_request_counter_and_duration_metrics(self):
         app = self._create_app()
@@ -142,6 +193,50 @@ class MonitoringSpecTests(unittest.TestCase):
             outcome="client_error",
         )
 
+    def test_malformed_messages_record_client_error_metric(self):
+        app = self._create_app(service_app.LLMServiceRuntime(StubRouter({})))
+
+        response = app.test_client().post(
+            "/v1/chat/completions",
+            json={
+                "model": "gemma_e2b_local",
+                "messages": ["not-an-object"],
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        body = self._metrics_text(app)
+        self._assert_metric_value(
+            body,
+            "llm_service_requests_total",
+            route="/v1/chat/completions",
+            model="none",
+            provider="none",
+            outcome="client_error",
+        )
+
+    def test_provider_resolution_failure_preserves_requested_model_and_unresolved_provider_label(self):
+        app = self._create_app(service_app.LLMServiceRuntime(StubRouter({})))
+
+        response = app.test_client().post(
+            "/v1/chat/completions",
+            json={
+                "model": "missing_provider",
+                "messages": [{"role": "user", "content": "hello"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 503)
+        body = self._metrics_text(app)
+        self._assert_metric_value(
+            body,
+            "llm_service_requests_total",
+            route="/v1/chat/completions",
+            model="missing_provider",
+            provider="none",
+            outcome="unavailable",
+        )
+
     def test_successful_chat_records_requested_model_and_resolved_provider_metrics(self):
         provider = StubProvider(model_id="gemma_e2b_local", provider_name="openai_compatible")
         runtime = service_app.LLMServiceRuntime(StubRouter({"gemma_e2b_local": provider}))
@@ -151,7 +246,7 @@ class MonitoringSpecTests(unittest.TestCase):
             "/v1/chat/completions",
             json={
                 "model": "gemma_e2b_local",
-                "messages": [{"role": "user", "content": "hello"}],
+                "messages": [{"role": "user", "content": "super-secret-prompt"}],
             },
         )
 
@@ -181,6 +276,7 @@ class MonitoringSpecTests(unittest.TestCase):
             provider="openai_compatible",
             outcome="success",
         )
+        self.assertNotIn("super-secret-prompt", body)
 
     def test_chat_in_flight_gauge_rises_during_active_request_and_returns_to_zero(self):
         provider = StubProvider(model_id="gemma_e2b_local", provider_name="openai_compatible")
@@ -219,6 +315,28 @@ class MonitoringSpecTests(unittest.TestCase):
             r'llm_service_in_flight_requests\{route="/v1/chat/completions"\} 0(?:\.0)?',
         )
 
+    def test_unhandled_chat_exception_records_server_error_metric(self):
+        app = self._create_app(ExplodingRuntime())
+
+        response = app.test_client().post(
+            "/v1/chat/completions",
+            json={
+                "model": "gemma_e2b_local",
+                "messages": [{"role": "user", "content": "hello"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 500)
+        body = self._metrics_text(app)
+        self._assert_metric_value(
+            body,
+            "llm_service_requests_total",
+            route="/v1/chat/completions",
+            model="none",
+            provider="none",
+            outcome="server_error",
+        )
+
     def test_provider_timeout_records_timeout_outcome_in_route_and_provider_metrics(self):
         provider = StubProvider(model_id="gemma_e2b_local", provider_name="openai_compatible")
         provider.raise_exc = ProviderTimeoutError("timed out")
@@ -252,7 +370,7 @@ class MonitoringSpecTests(unittest.TestCase):
             outcome="timeout",
         )
 
-    def test_provider_unavailable_records_unavailable_outcome(self):
+    def test_provider_unavailable_records_unavailable_outcome_and_provider_duration(self):
         provider = StubProvider(model_id="gemma_e2b_local", provider_name="openai_compatible")
         provider.raise_exc = ProviderUnavailableError("down")
         runtime = service_app.LLMServiceRuntime(StubRouter({"gemma_e2b_local": provider}))
@@ -276,8 +394,16 @@ class MonitoringSpecTests(unittest.TestCase):
             provider="openai_compatible",
             outcome="unavailable",
         )
+        self._assert_metric_value(
+            body,
+            "llm_service_provider_duration_seconds_count",
+            route="/v1/chat/completions",
+            model="gemma_e2b_local",
+            provider="openai_compatible",
+            outcome="unavailable",
+        )
 
-    def test_ready_emits_aggregate_route_metrics_and_per_provider_readiness_metrics(self):
+    def test_ready_emits_route_duration_and_per_provider_readiness_metrics(self):
         first = StubProvider(model_id="gemma_e2b_local", provider_name="openai_compatible")
         second = StubProvider(model_id="gemma_e4b_local", provider_name="llama_cpp")
         runtime = service_app.LLMServiceRuntime(
@@ -304,6 +430,14 @@ class MonitoringSpecTests(unittest.TestCase):
         )
         self._assert_metric_value(
             body,
+            "llm_service_request_duration_seconds_count",
+            route="/ready",
+            model="none",
+            provider="none",
+            outcome="success",
+        )
+        self._assert_metric_value(
+            body,
             "llm_service_readiness_checks_total",
             model="gemma_e2b_local",
             provider="openai_compatible",
@@ -316,6 +450,97 @@ class MonitoringSpecTests(unittest.TestCase):
             provider="llama_cpp",
             outcome="success",
         )
+
+    def test_ready_cached_success_still_emits_per_provider_readiness_metrics(self):
+        first = StubProvider(model_id="gemma_e2b_local", provider_name="openai_compatible")
+        second = StubProvider(model_id="gemma_e4b_local", provider_name="llama_cpp")
+        runtime = service_app.LLMServiceRuntime(
+            StubRouter(
+                {
+                    "gemma_e2b_local": first,
+                    "gemma_e4b_local": second,
+                }
+            )
+        )
+        app = self._create_app(runtime)
+
+        first_response = app.test_client().get("/ready")
+        second_response = app.test_client().get("/ready")
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 200)
+        body = self._metrics_text(app)
+        self._assert_metric_value(
+            body,
+            "llm_service_readiness_checks_total",
+            value_pattern=r"2(?:\.0)?",
+            model="gemma_e2b_local",
+            provider="openai_compatible",
+            outcome="success",
+        )
+        self._assert_metric_value(
+            body,
+            "llm_service_readiness_checks_total",
+            value_pattern=r"2(?:\.0)?",
+            model="gemma_e4b_local",
+            provider="llama_cpp",
+            outcome="success",
+        )
+
+    def test_ready_provider_value_error_maps_to_unavailable_metrics(self):
+        first = StubProvider(model_id="gemma_e2b_local", provider_name="openai_compatible")
+        second = StubProvider(model_id="gemma_e4b_local", provider_name="llama_cpp")
+        second.raise_exc = ValueError("bad readiness")
+        runtime = service_app.LLMServiceRuntime(
+            StubRouter(
+                {
+                    "gemma_e2b_local": first,
+                    "gemma_e4b_local": second,
+                }
+            )
+        )
+        app = self._create_app(runtime)
+
+        response = app.test_client().get("/ready")
+
+        self.assertEqual(response.status_code, 503)
+        body = self._metrics_text(app)
+        self._assert_metric_value(
+            body,
+            "llm_service_requests_total",
+            route="/ready",
+            model="none",
+            provider="none",
+            outcome="unavailable",
+        )
+        self._assert_metric_value(
+            body,
+            "llm_service_readiness_checks_total",
+            model="gemma_e2b_local",
+            provider="openai_compatible",
+            outcome="success",
+        )
+        self._assert_metric_value(
+            body,
+            "llm_service_readiness_checks_total",
+            model="gemma_e4b_local",
+            provider="llama_cpp",
+            outcome="unavailable",
+        )
+
+    def test_already_healthy_managed_server_emits_no_startup_attempt_metric(self):
+        app = self._create_app()
+
+        with patch("llm.local_server_runtime._server_is_ready", return_value=True):
+            local_server_runtime.ensure_managed_server(
+                base_url="http://127.0.0.1:18012",
+                binary_path="/opt/llama-cpp/llama-server",
+                model_path="/models/model.gguf",
+                model_name="gemma_e2b_local",
+            )
+
+        body = self._metrics_text(app)
+        self.assertNotIn('llm_service_managed_server_startups_total{base_url="http://127.0.0.1:18012",model="gemma_e2b_local"', body)
 
     def test_managed_server_successful_startup_records_startup_metrics(self):
         app = self._create_app()

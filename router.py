@@ -60,6 +60,7 @@ class ProviderRouter:
                 api_key=conn.get("api_key"),
                 default_params=default_params,
                 managed_server=conn.get("managed_server"),
+                input_modalities=(entry.get("capabilities") or {}).get("input_modalities"),
             )
 
         raise ValueError(f"Unknown provider_type '{ptype}' for provider '{pid}'")

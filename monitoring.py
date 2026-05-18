@@ -139,6 +139,15 @@ def current_request_labels() -> tuple[str, str]:
     return context.get("model", "none"), context.get("provider", "none")
 
 
+def current_request_metric_labels() -> tuple[str, str, str]:
+    context = _REQUEST_CONTEXT.get() or {}
+    return (
+        context.get("route", "none"),
+        context.get("model", "none"),
+        context.get("provider", "none"),
+    )
+
+
 def clear_request_context() -> None:
     _REQUEST_CONTEXT.set(None)
 
@@ -176,6 +185,16 @@ def classify_exception(exc: Exception) -> str:
     return "server_error"
 
 
+def classify_readiness_exception(exc: Exception) -> str:
+    from .provider_base import ProviderTimeoutError, ProviderUnavailableError
+
+    if isinstance(exc, ProviderTimeoutError):
+        return "timeout"
+    if isinstance(exc, (ProviderUnavailableError, RuntimeError, KeyError, ValueError)):
+        return "unavailable"
+    return "server_error"
+
+
 def observe_request(route: str, outcome: str, model: str = "none", provider: str = "none", duration_seconds: float = 0.0) -> None:
     outcome = _normalize_outcome(outcome)
     model = _normalize_label(model)
@@ -194,6 +213,19 @@ def observe_provider_duration(route: str, outcome: str, model: str, provider: st
         "outcome": outcome,
     }
     _provider_duration_seconds.labels(**labels).observe(duration_seconds)
+
+
+def observe_current_chat_provider_duration(outcome: str, duration_seconds: float) -> None:
+    route, model, provider = current_request_metric_labels()
+    if route != "/v1/chat/completions":
+        return
+    observe_provider_duration(
+        route=route,
+        model=model,
+        provider=provider,
+        outcome=outcome,
+        duration_seconds=duration_seconds,
+    )
 
 
 def observe_readiness(model: str, provider: str, outcome: str, duration_seconds: float) -> None:

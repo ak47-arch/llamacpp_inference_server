@@ -1,5 +1,6 @@
 """Managed local llama.cpp server lifecycle for low-latency HTTP inference."""
 
+import logging
 import os
 import subprocess
 import time
@@ -10,6 +11,7 @@ from . import monitoring
 
 
 _managed_servers = {}
+_RUNTIME_LOGGER = logging.getLogger("llm.runtime")
 
 
 def _healthcheck_urls(base_url: str) -> list[str]:
@@ -28,6 +30,19 @@ def _server_is_ready(base_url: str, timeout_seconds: float = 1.0) -> bool:
         except (urllib.error.URLError, TimeoutError):
             continue
     return False
+
+
+def _resolve_mmproj_path(server_config: dict | None = None) -> str | None:
+    server_config = server_config or {}
+    env_name = server_config.get("mmproj_path_env")
+    if env_name:
+        env_value = (os.environ.get(env_name) or "").strip()
+        if env_value:
+            return os.path.expanduser(env_value)
+    configured_path = (server_config.get("mmproj_path") or "").strip()
+    if configured_path:
+        return os.path.expanduser(configured_path)
+    return None
 
 
 def _build_server_command(
@@ -72,11 +87,57 @@ def _build_server_command(
     if batch_size is not None:
         command.extend(["-b", str(batch_size)])
 
+    mmproj_path = _resolve_mmproj_path(server_config)
+    if mmproj_path:
+        command.extend(["--mmproj", mmproj_path])
+
     extra_args = server_config.get("extra_args") or []
     if extra_args:
         command.extend([str(arg) for arg in extra_args])
 
     return command
+
+
+def _sanitize_child_log_line(line: str) -> str | None:
+    sanitized = line.strip()
+    if not sanitized:
+        return None
+
+    lowered = sanitized.lower()
+    blocked_markers = (
+        "authorization:",
+        "bearer ",
+        "api_key",
+        '"messages"',
+        "data:",
+        "http://",
+        "https://",
+    )
+    if any(marker in lowered for marker in blocked_markers):
+        return None
+    return sanitized
+
+
+def _forward_child_logs(process: subprocess.Popen, model: str, base_url: str) -> None:
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(process, stream_name, None)
+        if stream is None:
+            continue
+        try:
+            iterator = iter(stream)
+        except TypeError:
+            continue
+        for raw_line in iterator:
+            sanitized = _sanitize_child_log_line(raw_line)
+            if sanitized is None:
+                continue
+            _RUNTIME_LOGGER.info(
+                "event=child_log model=%s base_url=%s stream=%s message=%s",
+                model,
+                base_url,
+                stream_name,
+                sanitized,
+            )
 
 
 def _wait_for_server(base_url: str, timeout_seconds: float) -> None:
@@ -106,6 +167,7 @@ def ensure_managed_server(
         _wait_for_server(base_url, (server_config or {}).get("startup_timeout_seconds", 30))
         return
     if existing is not None and existing.poll() is not None:
+        _RUNTIME_LOGGER.info("event=restart model=%s base_url=%s", metric_model, base_url)
         monitoring.increment_managed_server_restart(metric_model, base_url)
 
     command = _build_server_command(
@@ -118,20 +180,30 @@ def ensure_managed_server(
     )
 
     start = time.monotonic()
+    _RUNTIME_LOGGER.info("event=launch model=%s base_url=%s", metric_model, base_url)
     process = subprocess.Popen(
         command,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
         start_new_session=True,
     )
     try:
         _wait_for_server(base_url, (server_config or {}).get("startup_timeout_seconds", 30))
     except Exception:
+        duration_seconds = time.monotonic() - start
+        _forward_child_logs(process, metric_model, base_url)
+        _RUNTIME_LOGGER.info(
+            "event=failure model=%s base_url=%s duration_seconds=%.6f error_class=unavailable",
+            metric_model,
+            base_url,
+            duration_seconds,
+        )
         monitoring.observe_managed_server_startup(
             model=metric_model,
             base_url=base_url,
             outcome="unavailable",
-            duration_seconds=time.monotonic() - start,
+            duration_seconds=duration_seconds,
         )
         process.terminate()
         try:
@@ -141,18 +213,27 @@ def ensure_managed_server(
             process.wait(timeout=2)
         raise
 
+    duration_seconds = time.monotonic() - start
+    _forward_child_logs(process, metric_model, base_url)
+    _RUNTIME_LOGGER.info(
+        "event=ready model=%s base_url=%s duration_seconds=%.6f",
+        metric_model,
+        base_url,
+        duration_seconds,
+    )
     monitoring.observe_managed_server_startup(
         model=metric_model,
         base_url=base_url,
         outcome="success",
-        duration_seconds=time.monotonic() - start,
+        duration_seconds=duration_seconds,
     )
     _managed_servers[base_url] = process
 
 
 def reset_managed_servers() -> None:
-    for process in _managed_servers.values():
+    for base_url, process in list(_managed_servers.items()):
         if process.poll() is None:
+            _RUNTIME_LOGGER.info("event=terminate model=unknown base_url=%s", base_url)
             process.terminate()
             try:
                 process.wait(timeout=2)

@@ -4,6 +4,10 @@ providers:
   - id: gemma_e2b_local
     provider_type: openai_compatible
     model_name: gemma_e2b_local
+    capabilities:
+      input_modalities:
+        - text
+        - image
     connection:
       base_url: http://127.0.0.1:18012
       managed_server:
@@ -14,6 +18,7 @@ providers:
         startup_timeout_seconds: 180
         ctx_size: 8192
         threads: 8
+        mmproj_path_env: GEMMA_E2B_LOCAL_MMPROJ_PATH
         extra_args:
 #          - --reasoning
 #          - "off"
@@ -27,6 +32,10 @@ providers:
   - id: gemma_e4b_local
     provider_type: openai_compatible
     model_name: gemma_e4b_local
+    capabilities:
+      input_modalities:
+        - text
+        - image
     connection:
       base_url: http://127.0.0.1:18013
       managed_server:
@@ -37,6 +46,7 @@ providers:
         startup_timeout_seconds: 180
         ctx_size: 8192
         threads: 8
+        mmproj_path_env: GEMMA_E4B_LOCAL_MMPROJ_PATH
         extra_args:
 #          - --reasoning
 #          - "off"
@@ -50,6 +60,10 @@ providers:
   - id: gemma_e4b_q4_local
     provider_type: openai_compatible
     model_name: gemma_e4b_q4_local
+    capabilities:
+      input_modalities:
+        - text
+        - image
     connection:
       base_url: http://127.0.0.1:18014
       managed_server:
@@ -60,6 +74,7 @@ providers:
         startup_timeout_seconds: 180
         ctx_size: 8192
         threads: 8
+        mmproj_path_env: GEMMA_E4B_Q4_LOCAL_MMPROJ_PATH
         extra_args:
 #          - --reasoning
 #          - "off"

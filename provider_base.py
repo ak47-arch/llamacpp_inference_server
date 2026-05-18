@@ -26,11 +26,16 @@ class BaseProvider(ABC):
     def warmup(self) -> None:
         """Prepare the runtime for future completions."""
 
+    def supported_input_modalities(self) -> set[str]:
+        """Return the active input modalities supported by this provider."""
+        return {"text"}
+
     @abstractmethod
     def complete(
         self,
-        prompt: str,
+        prompt: str = "",
         system: str = "",
         params: Optional[dict] = None,
+        messages: Optional[list] = None,
     ) -> CompletionResult:
         """Run inference and return a CompletionResult."""

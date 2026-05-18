@@ -5,6 +5,7 @@ import subprocess
 import time
 from typing import Optional
 
+from . import monitoring
 from .provider_base import (
     BaseProvider,
     CompletionResult,
@@ -29,9 +30,10 @@ class LlamaCppProvider(BaseProvider):
 
     def complete(
         self,
-        prompt: str,
+        prompt: str = "",
         system: str = "",
         params: Optional[dict] = None,
+        messages: Optional[list] = None,
     ) -> CompletionResult:
         merged = {**self.default_params, **(params or {})}
 
@@ -68,6 +70,10 @@ class LlamaCppProvider(BaseProvider):
             stdout, stderr = process.communicate(timeout=timeout)
         except subprocess.TimeoutExpired as exc:
             self._cleanup_process(process)
+            monitoring.observe_current_chat_provider_duration(
+                outcome="timeout",
+                duration_seconds=time.monotonic() - start,
+            )
             raise ProviderTimeoutError(
                 f"llama-cli timed out after {timeout}s"
             ) from exc
@@ -75,6 +81,10 @@ class LlamaCppProvider(BaseProvider):
         latency_ms = int((time.monotonic() - start) * 1000)
 
         if process.returncode != 0:
+            monitoring.observe_current_chat_provider_duration(
+                outcome="unavailable",
+                duration_seconds=time.monotonic() - start,
+            )
             raise ProviderUnavailableError(
                 f"llama-cli exited {process.returncode}: {stderr[:300]}"
             )
@@ -83,6 +93,11 @@ class LlamaCppProvider(BaseProvider):
         output = stdout
         if output.startswith(full_prompt):
             output = output[len(full_prompt):]
+
+        monitoring.observe_current_chat_provider_duration(
+            outcome="success",
+            duration_seconds=time.monotonic() - start,
+        )
 
         return CompletionResult(
             text=output.strip(),
