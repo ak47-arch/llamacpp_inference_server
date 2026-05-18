@@ -42,3 +42,7 @@ This file is both:
 - 2026-05-17 | spec: specs/operational-logging.md | kind: spec | commit: 46e4e3fbf081af3ff6e11954031464a04ad8c8e3 | summary: add canonical operational logging spec
 - 2026-05-18 | spec: specs/openai-compatible-provider.md | kind: spec | commit: 6f2f3e924021d83048462b5e4353ac924a7207d0 | summary: record multimodal provider verifier audit reports and status note
 - 2026-05-18 | spec: specs/operational-logging.md | kind: spec | commit: 6f2f3e924021d83048462b5e4353ac924a7207d0 | summary: record operational logging verifier audit reports and status note
+- 2026-05-18 | spec: specs/openai-compatible-provider.md | kind: implementation | commit: b831568f0716154a36070ea8495c1fe95394489c | summary: add multimodal message pass-through and managed mmproj support
+- 2026-05-18 | spec: specs/operational-logging.md | kind: implementation | commit: b831568f0716154a36070ea8495c1fe95394489c | summary: add operational service/runtime logging and sanitized child log forwarding
+- 2026-05-18 | spec: specs/monitoring.md | kind: implementation | commit: b831568f0716154a36070ea8495c1fe95394489c | summary: update monitoring integration and regression coverage alongside service changes
+- 2026-05-18 | spec: specs/subagents.md | kind: implementation | commit: b831568f0716154a36070ea8495c1fe95394489c | summary: add isolated spec and test verifier commands to the local extension

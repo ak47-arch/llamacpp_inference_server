@@ -345,3 +345,4 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 ### Implementation Commits
 
 - 2026-05-17 | 99b4ff5d9b49d5220a7860ef52b693be064326b4 | add Prometheus metrics endpoint and runtime telemetry
+- 2026-05-18 | b831568f0716154a36070ea8495c1fe95394489c | update monitoring integration and regression coverage alongside service changes

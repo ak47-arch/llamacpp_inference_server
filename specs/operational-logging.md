@@ -485,3 +485,5 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 - 2026-05-18 | 6f2f3e924021d83048462b5e4353ac924a7207d0 | record accepted test audit and failed spec audit reports for operational logging
 
 ### Implementation Commits
+
+- 2026-05-18 | b831568f0716154a36070ea8495c1fe95394489c | add operational service/runtime logging and sanitized child log forwarding

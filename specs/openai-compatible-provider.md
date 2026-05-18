@@ -601,3 +601,4 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 ### Implementation Commits
 
 - 2026-05-17 | 4fbdb89841c35c5b522c187508dd04c3208bc476 | add e4b q4 provider and remove implicit temperature and max_tokens defaults
+- 2026-05-18 | b831568f0716154a36070ea8495c1fe95394489c | add multimodal message pass-through and managed mmproj support
