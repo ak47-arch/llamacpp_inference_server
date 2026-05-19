@@ -18,7 +18,7 @@ from llm.provider_base import ProviderUnavailableError  # noqa: E402
 class OpenAICompatibleProviderSpecTests(unittest.TestCase):
     def test_bundled_openai_example_providers_do_not_define_temperature_or_max_tokens_defaults(self):
         config = yaml.safe_load((REPO_ROOT / "service_models.yaml").read_text())
-        bundled_ids = {"gemma_e2b_local", "gemma_e4b_local", "gemma_e4b_q4_local"}
+        bundled_ids = {"gemma_e4b_q4_local"}
         for provider in config["providers"]:
             if provider["id"] not in bundled_ids:
                 continue

@@ -62,21 +62,21 @@ The server reads provider definitions from `service_models.yaml`.
 Current defaults assume:
 - model files mounted at `/models`
 - `llama.cpp` binaries mounted at `/opt/llama-cpp`
-- managed local runtimes listening on ports `18012`, `18013`, and `18014`
+- the managed local runtime listening on port `18014`
 
-Bundled OpenAI-compatible local providers:
-- `gemma_e2b_local`
-- `gemma_e4b_local`
+Bundled OpenAI-compatible local provider:
 - `gemma_e4b_q4_local`
 
+Commented-out E2B and non-Q4 E4B provider blocks remain in `service_models.yaml` as quick re-enable examples.
+
+The bundled managed runtime uses the model's default context size by omitting an explicit `ctx_size` override.
+The active bundled provider currently declares `text` and `image` input support; audio requests are rejected unless provider configuration is extended to include active audio support.
+
 For image input, the managed runtime also needs a matching multimodal projector (`mmproj`) file.
-The checked-in `docker-compose.yml` now expects:
-- `/models/mmproj-google_gemma-4-E2B-it-f16.gguf`
+The checked-in `docker-compose.yml` expects:
 - `/models/mmproj-google_gemma-4-E4B-it-f16.gguf`
 
-via these environment variables:
-- `GEMMA_E2B_LOCAL_MMPROJ_PATH`
-- `GEMMA_E4B_LOCAL_MMPROJ_PATH`
+via this environment variable:
 - `GEMMA_E4B_Q4_LOCAL_MMPROJ_PATH`
 
 ## Local run
@@ -144,7 +144,7 @@ curl http://127.0.0.1:8012/metrics
 curl -X POST http://127.0.0.1:8012/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -d '{
-    "model": "gemma_e2b_local",
+    "model": "gemma_e4b_q4_local",
     "messages": [
       {"role": "system", "content": "You are concise."},
       {"role": "user", "content": "Say hello."}

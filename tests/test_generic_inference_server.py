@@ -48,33 +48,34 @@ class GenericInferenceServerTests(unittest.TestCase):
         self.assertNotIn("COPY llm/ ./llm/", content)
         self.assertNotIn("COPY config/ ./config/", content)
 
-    def test_service_models_declare_expected_bundled_openai_providers(self):
+    def test_service_models_declare_only_q4_e4b_bundled_provider(self):
         config = yaml.safe_load((REPO_ROOT / "service_models.yaml").read_text())
-        provider_ids = {provider["id"] for provider in config["providers"]}
-        self.assertIn("gemma_e2b_local", provider_ids)
-        self.assertIn("gemma_e4b_local", provider_ids)
-        self.assertIn("gemma_e4b_q4_local", provider_ids)
+        providers = config["providers"]
+        self.assertEqual(len(providers), 1)
 
-        provider = next(provider for provider in config["providers"] if provider["id"] == "gemma_e4b_q4_local")
+        provider = providers[0]
+        self.assertEqual(provider["id"], "gemma_e4b_q4_local")
         self.assertEqual(provider["connection"]["base_url"], "http://127.0.0.1:18014")
         self.assertEqual(provider["connection"]["managed_server"]["port"], 18014)
         self.assertEqual(provider["connection"]["managed_server"]["model_path"], "/models/google_gemma-4-E4B-it-Q4_K_M.gguf")
+        self.assertNotIn("ctx_size", provider["connection"]["managed_server"])
 
-    def test_service_models_comments_out_reasoning_arguments(self):
+    def test_service_models_comments_out_disabled_provider_examples_and_reasoning_arguments(self):
         content = (REPO_ROOT / "service_models.yaml").read_text()
-        for provider_id in ("gemma_e2b_local", "gemma_e4b_local", "gemma_e4b_q4_local"):
-            block = content.split(f"- id: {provider_id}", 1)[1]
-            block = block.split("\n  - id:", 1)[0]
-            self.assertIn("#          - --reasoning", block)
-            self.assertIn('#          - "off"', block)
-            self.assertIn("#          - --reasoning-budget", block)
-            self.assertIn('#          - "0"', block)
-            self.assertIn("#          - --reasoning-format", block)
-            self.assertIn("#          - none", block)
+        self.assertIn("#  - id: gemma_e2b_local", content)
+        self.assertIn("#  - id: gemma_e4b_local", content)
+
+        block = content.split("- id: gemma_e4b_q4_local", 1)[1]
+        self.assertIn("#          - --reasoning", block)
+        self.assertIn('#          - "off"', block)
+        self.assertIn("#          - --reasoning-budget", block)
+        self.assertIn('#          - "0"', block)
+        self.assertIn("#          - --reasoning-format", block)
+        self.assertIn("#          - none", block)
 
     def test_commented_reasoning_lines_do_not_become_active_runtime_arguments(self):
         config = yaml.safe_load((REPO_ROOT / "service_models.yaml").read_text())
-        provider = next(provider for provider in config["providers"] if provider["id"] == "gemma_e2b_local")
+        provider = next(provider for provider in config["providers"] if provider["id"] == "gemma_e4b_q4_local")
         command = local_server_runtime._build_server_command(
             binary_path=provider["connection"]["managed_server"]["binary_path"],
             model_path=provider["connection"]["managed_server"]["model_path"],
@@ -90,6 +91,7 @@ class GenericInferenceServerTests(unittest.TestCase):
         self.assertNotIn("off", command)
         self.assertNotIn("0", command)
         self.assertNotIn("none", command)
+        self.assertNotIn("-c", command)
 
 
 if __name__ == "__main__":

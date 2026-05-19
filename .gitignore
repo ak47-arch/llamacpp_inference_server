@@ -13,3 +13,5 @@ __pycache__/
 # gemma/mmproj-google_gemma-4-E2B-it-f16.gguf
 # gemma/mmproj-google_gemma-4-E4B-it-f16.gguf
 gemma/*.gguf
+
+Free_Test_Data_10MB_WAV.wav

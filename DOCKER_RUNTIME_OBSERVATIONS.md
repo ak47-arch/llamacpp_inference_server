@@ -2,6 +2,8 @@
 
 Date: 2026-05-17
 
+Historical note: this document records observations from the earlier three-provider bundled configuration. The current repository defaults keep only `gemma_e4b_q4_local` active, retain the other provider blocks as commented reference examples, and omit an explicit `ctx_size` override so the active model uses its default context length.
+
 ## Goal
 
 Build the repository Docker image, run the container, and verify live inference against the bundled local Gemma models.
