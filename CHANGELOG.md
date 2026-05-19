@@ -20,6 +20,10 @@ This file is both:
 - Dropped the active provider's explicit `ctx_size` override so managed `llama-server` uses the model default context size.
 - Updated repository documentation to reflect the single active Q4 provider layout and clarify that current bundled audio input is not enabled.
 
+### Traceability Ledger
+
+- 2026-05-19 | spec: specs/openai-compatible-provider.md | kind: implementation | commit: 4865b2a81eb5d26c71574ca33af69c25b91f3545 | summary: simplify bundled config to the active e4b q4 provider and use model-default context sizing
+
 ## v0.1.0 - 2026-05-19
 
 ### Summary
