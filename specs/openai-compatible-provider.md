@@ -61,7 +61,7 @@ The active bundled provider set includes:
 - model path `/models/google_gemma-4-E4B-it-Q4_K_M.gguf`
 - local managed server port `18014`
 - no explicit `ctx_size` override, so `llama-server` uses the model default context size
-- declared active input modalities `text` and `image`
+- declared active input modalities `text`, `image`, and `audio`
 
 Commented-out `gemma_e2b_local` and `gemma_e4b_local` blocks are retained in `service_models.yaml` as reference-only examples for quick re-enablement. The bundled provider blocks keep reasoning-related `llama-server` flags present as commented-out lines inside `managed_server.extra_args` rather than active runtime arguments. Because these lines are commented out, the bundled examples do not actively force reasoning behavior on or off through `extra_args`.
 
@@ -85,6 +85,8 @@ If a request contains image or audio content parts and the selected provider doe
 `llama_cpp_provider.py` remains text-only in this feature area. Structured multimodal chat support is limited to the OpenAI-compatible provider path.
 
 OpenAI-compatible providers send outbound `POST /v1/chat/completions` requests containing `model` and the validated `messages` array for every request.
+
+When an upstream OpenAI-compatible response includes an empty assistant `message.content` but a non-empty `message.reasoning_content`, the provider surfaces `reasoning_content` as the completion text instead of returning an empty string.
 
 `temperature` is included in the outbound payload only when explicitly provided through provider configuration or the incoming request.
 
@@ -156,6 +158,8 @@ Bundled managed providers may define:
 - `extra_args`
 - `mmproj_path_env` (optional)
 - `mmproj_path` (optional fallback)
+
+`local_server_runtime.py` launches managed binaries with `LD_LIBRARY_PATH` prefixed by the binary directory so mounted `llama.cpp` builds can resolve colocated shared libraries.
 
 `mmproj_path_env` is resolved first. If it is unset or empty, `mmproj_path` may be used as a fallback. If neither resolves to a usable path, multimodal vision support is inactive for that provider.
 
@@ -263,6 +267,7 @@ Invariants:
 - omitted optional parameters remain omitted in the outbound payload
 - caller-supplied values override provider defaults
 - timeout configuration affects only the HTTP client call, not upstream model semantics
+- if `message.content` is empty but `message.reasoning_content` is present, the provider returns the reasoning text
 - commented reasoning lines are not active runtime flags
 - the repository never auto-downloads multimodal projector assets
 
@@ -279,7 +284,8 @@ Invariants:
 8. Provider example configuration in `service_models.yaml` must not encode old application-specific defaults for generic use.
 9. Caller-supplied parameters must override provider-configured defaults.
 10. The absence of `temperature` or `max_tokens` in the inbound request must not be converted into repository-defined fallback values in the outbound payload.
-11. The HTTP service must preserve validated OpenAI-style structured `messages` content for OpenAI-compatible providers instead of flattening it into prompt text.
+11. If an upstream assistant message leaves `content` empty but includes `reasoning_content`, the provider must surface the reasoning text rather than returning an empty completion.
+12. The HTTP service must preserve validated OpenAI-style structured `messages` content for OpenAI-compatible providers instead of flattening it into prompt text.
 12. Existing text-only OpenAI chat requests must keep working without changing their request shape.
 13. Requests containing image or audio content must fail fast with `400 invalid_request` when the selected provider lacks active support for those modalities.
 14. Direct `llama_cpp_provider.py` invocation remains text-only and is out of scope for multimodal chat support in this feature.
@@ -294,6 +300,7 @@ Invariants:
 - If no `timeout_seconds` is configured or requested, the provider uses its built-in local HTTP timeout fallback.
 - If the upstream backend rejects the request, the provider surfaces a provider-unavailable error.
 - If the upstream backend is unreachable, the provider resets managed-runtime readiness and surfaces a provider-unavailable error.
+- If the upstream backend returns empty `content` with non-empty `reasoning_content`, the reasoning text is returned.
 - If `messages` is missing, empty, or contains non-object items, the service returns `400 invalid_request`.
 - If a structured content part is missing its required field for the declared `type`, the service returns `400 invalid_request`.
 - If a content part uses an unknown `type`, the service returns `400 invalid_request`.
@@ -312,11 +319,12 @@ Invariants:
 5. Repository tests assert the active bundled provider shape, omitted `ctx_size`, and the commented example lines.
 6. `service_models.yaml` example providers do not define `default_params.temperature`.
 7. `service_models.yaml` example providers do not define `default_params.max_tokens`.
-7. `openai_compatible_provider.py` omits `temperature` from the outbound payload when it is not explicitly configured or requested.
-8. `openai_compatible_provider.py` omits `max_tokens` from the outbound payload when it is not explicitly configured or requested.
-9. `openai_compatible_provider.py` still applies a local HTTP timeout fallback when no timeout is specified.
-10. Caller-supplied `temperature` and `max_tokens` still override provider configuration when supplied.
-11. `service_app.py` accepts OpenAI-style `messages` whose `content` is either a string or an ordered list of supported structured content parts.
+8. `openai_compatible_provider.py` omits `temperature` from the outbound payload when it is not explicitly configured or requested.
+9. `openai_compatible_provider.py` omits `max_tokens` from the outbound payload when it is not explicitly configured or requested.
+10. `openai_compatible_provider.py` still applies a local HTTP timeout fallback when no timeout is specified.
+11. Caller-supplied `temperature` and `max_tokens` still override provider configuration when supplied.
+12. `openai_compatible_provider.py` uses `message.reasoning_content` when `message.content` is empty.
+13. `service_app.py` accepts OpenAI-style `messages` whose `content` is either a string or an ordered list of supported structured content parts.
 12. For OpenAI-compatible providers, structured `messages` content is forwarded upstream without being flattened into plain prompt text.
 13. A multimodal request to a provider without active support for the required modality returns `400 invalid_request` before provider warmup or upstream inference.
 14. Managed local OpenAI-compatible providers can resolve multimodal projector paths from `mmproj_path_env` with optional `mmproj_path` fallback and pass them to `llama-server` as `--mmproj`.
@@ -334,6 +342,7 @@ Invariants:
 - Verify outbound payload includes `temperature` and `max_tokens` when provided by provider config.
 - Verify caller-supplied `temperature` and `max_tokens` override configured values.
 - Verify the HTTP client still uses a timeout fallback when no timeout is specified.
+- Verify `openai_compatible_provider.py` falls back to `message.reasoning_content` when `message.content` is empty.
 - Verify `service_app.py` accepts string `content` and structured content-part arrays for OpenAI-compatible requests.
 - Verify structured `messages` are forwarded upstream unchanged for OpenAI-compatible providers.
 - Verify unsupported multimodal requests fail with `400 invalid_request` before provider invocation.

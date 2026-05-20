@@ -143,7 +143,8 @@ class OpenAICompatibleProvider(BaseProvider):
             )
 
         data = response.json()
-        text = data["choices"][0]["message"]["content"]
+        message = data["choices"][0]["message"]
+        text = message.get("content") or message.get("reasoning_content") or ""
         tokens_used = data.get("usage", {}).get("total_tokens")
 
         monitoring.observe_current_chat_provider_duration(

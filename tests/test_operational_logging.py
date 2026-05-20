@@ -248,6 +248,29 @@ class OperationalLoggingTests(unittest.TestCase):
             )
         )
 
+    def test_ensure_managed_server_sets_ld_library_path_for_binary_directory(self):
+        process = Mock()
+        process.poll.return_value = None
+        process.stdout = io.StringIO('')
+        process.stderr = io.StringIO('')
+
+        with patch.object(local_server_runtime, "_server_is_ready", return_value=False), patch.object(
+            local_server_runtime, "_wait_for_server", return_value=None
+        ), patch.object(local_server_runtime.subprocess, "Popen", return_value=process) as popen:
+            local_server_runtime.ensure_managed_server(
+                base_url="http://127.0.0.1:18012",
+                binary_path="/opt/llama-cpp/llama-server",
+                model_path="/models/model.gguf",
+                model_name="gemma_e2b_local",
+                model_id="gemma_e2b_local",
+                server_config={},
+                default_params={},
+            )
+
+        env = popen.call_args.kwargs["env"]
+        self.assertIn("LD_LIBRARY_PATH", env)
+        self.assertIn("/opt/llama-cpp", env["LD_LIBRARY_PATH"].split(":"))
+
     def test_ensure_managed_server_returns_without_waiting_for_child_log_eof(self):
         process = Mock()
         process.poll.return_value = None

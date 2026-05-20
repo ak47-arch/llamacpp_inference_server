@@ -26,8 +26,8 @@
 | Env-var override for bind host/port | Implemented | `LLM_SERVER_HOST`, `LLM_SERVER_PORT` |
 | Dockerfile for standalone container | Implemented | Uses `gunicorn` |
 | Docker Compose deployment | Implemented | Port 8012, mounted models + llama.cpp dir |
-| Container healthcheck | Implemented | Calls `/ready` |
-| Bundled example provider config | Implemented | Two Gemma-based local providers in `service_models.yaml` |
+| Container healthcheck | Implemented | Calls `/health` |
+| Bundled example provider config | Implemented | Single active `gemma_e4b_q4_local` provider, with commented reference blocks for older bundled examples |
 | Requests-based outbound HTTP inference | Implemented | For OpenAI-compatible providers |
 | Timeout handling | Implemented | Maps to provider timeout errors / HTTP 504 |
 | Unavailable-backend handling | Implemented | Maps to provider unavailable errors / HTTP 503 |
@@ -54,8 +54,8 @@
 | Responses API | Not implemented | No `/v1/responses` |
 | Streaming chat completions | Not implemented | No SSE/chunked streaming |
 | Auth on server endpoints | Not implemented | No API key or token check on incoming requests |
-| Metrics endpoint | Not implemented | No Prometheus or usage metrics endpoint |
-| Request logging/audit trail | Not implemented | No structured request log layer |
+| Metrics endpoint | Implemented | `GET /metrics` exposes Prometheus-format metrics |
+| Request logging/audit trail | Implemented (operational) | Service/runtime operational logs are emitted without raw prompt/body logging |
 | Rate limiting | Not implemented | No concurrency or quota controls at HTTP layer |
 | Multi-tenant isolation | Not implemented | No tenant-aware config or auth |
 | Admin API for model lifecycle | Not implemented | Runtime mgmt is internal only |

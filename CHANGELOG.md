@@ -18,7 +18,8 @@ This file is both:
 
 - Simplified the bundled local provider config so only `gemma_e4b_q4_local` is active, while E2B and non-Q4 E4B remain as commented reference blocks.
 - Dropped the active provider's explicit `ctx_size` override so managed `llama-server` uses the model default context size.
-- Updated repository documentation to reflect the single active Q4 provider layout and clarify that current bundled audio input is not enabled.
+- Enabled bundled Gemma E4B Q4 audio input support, documented the requirement for a newer `llama.cpp` build, and taught the provider to surface `reasoning_content` when audio-capable backends leave `message.content` empty.
+- Updated container/runtime documentation so liveness healthchecks use `/health` instead of `/ready`, avoiding readiness-triggered warmup loops during development.
 
 ### Traceability Ledger
 

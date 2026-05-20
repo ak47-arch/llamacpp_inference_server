@@ -161,6 +161,17 @@ def _wait_for_server(base_url: str, timeout_seconds: float) -> None:
     raise RuntimeError(f"Managed local server at {base_url} did not become ready")
 
 
+def _build_subprocess_env(binary_path: str) -> dict[str, str]:
+    env = dict(os.environ)
+    binary_dir = os.path.dirname(os.path.expanduser(binary_path))
+    existing = env.get("LD_LIBRARY_PATH", "")
+    paths = [path for path in existing.split(":") if path]
+    if binary_dir and binary_dir not in paths:
+        paths.insert(0, binary_dir)
+    env["LD_LIBRARY_PATH"] = ":".join(paths)
+    return env
+
+
 def ensure_managed_server(
     base_url: str,
     binary_path: str,
@@ -199,6 +210,7 @@ def ensure_managed_server(
         stderr=subprocess.PIPE,
         text=True,
         start_new_session=True,
+        env=_build_subprocess_env(binary_path),
     )
     _start_child_log_forwarders(process, metric_model, base_url)
     try:

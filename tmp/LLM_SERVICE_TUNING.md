@@ -50,13 +50,13 @@ Try:
 Try:
 - longer `startup_timeout_seconds` for large models
 - larger request `timeout_seconds` for slow hardware
-- readiness probes before putting the container behind a load balancer
+- use `GET /health` for liveness probes and reserve `GET /ready` for explicit warmup/readiness checks
 
 ## Container deployment notes
 
 Recommended mounts:
 - `/models` for GGUF files
-- `/opt/llama-cpp` for `llama-server`
+- `/opt/llama-cpp` for `llama-server` and its colocated shared libraries
 
 Recommended environment variables:
 - `LLM_SERVER_HOST`

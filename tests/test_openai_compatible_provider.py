@@ -239,6 +239,26 @@ class OpenAICompatibleProviderSpecTests(unittest.TestCase):
 
         self.assertEqual(post.call_args.kwargs["json"]["messages"], messages)
 
+    def test_complete_uses_reasoning_content_when_message_content_is_empty(self):
+        provider = OpenAICompatibleProvider(
+            model_id="test_provider",
+            base_url="http://example.test",
+            model_name="test-model",
+            input_modalities={"text", "audio"},
+        )
+
+        response = Mock()
+        response.status_code = 200
+        response.json.return_value = {
+            "choices": [{"message": {"content": "", "reasoning_content": "This audio clip contains music."}}],
+            "usage": {"total_tokens": 3},
+        }
+
+        with patch("llm.openai_compatible_provider.requests.post", return_value=response):
+            result = provider.complete(messages=[{"role": "user", "content": [{"type": "input_audio", "input_audio": {"data": "AAAA", "format": "wav"}}]}])
+
+        self.assertEqual(result.text, "This audio clip contains music.")
+
     def test_supported_input_modalities_default_to_text_only_when_unset(self):
         provider = OpenAICompatibleProvider(
             model_id="test_provider",

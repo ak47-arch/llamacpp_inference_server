@@ -41,6 +41,12 @@ class GenericInferenceServerTests(unittest.TestCase):
         self.assertIn("LLAMA_CPP_DIR", content)
         self.assertNotIn("SURVIVAL_", content)
 
+    def test_container_healthchecks_use_liveness_endpoint(self):
+        compose_content = (REPO_ROOT / "docker-compose.yml").read_text()
+        dockerfile_content = (REPO_ROOT / "Dockerfile").read_text()
+        self.assertIn("http://127.0.0.1:8012/health", compose_content)
+        self.assertIn("http://127.0.0.1:8012/health", dockerfile_content)
+
     def test_dockerfile_matches_standalone_repo_layout(self):
         content = (REPO_ROOT / "Dockerfile").read_text()
         self.assertIn("COPY requirements.txt ./", content)
@@ -58,6 +64,7 @@ class GenericInferenceServerTests(unittest.TestCase):
         self.assertEqual(provider["connection"]["base_url"], "http://127.0.0.1:18014")
         self.assertEqual(provider["connection"]["managed_server"]["port"], 18014)
         self.assertEqual(provider["connection"]["managed_server"]["model_path"], "/models/google_gemma-4-E4B-it-Q4_K_M.gguf")
+        self.assertEqual(set(provider["capabilities"]["input_modalities"]), {"text", "image", "audio"})
         self.assertNotIn("ctx_size", provider["connection"]["managed_server"])
 
     def test_service_models_comments_out_disabled_provider_examples_and_reasoning_arguments(self):

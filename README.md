@@ -27,7 +27,7 @@ It provides:
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
-├── LLM_SERVICE_TUNING.md
+├── tmp/
 └── gemma/
 ```
 
@@ -70,7 +70,8 @@ Bundled OpenAI-compatible local provider:
 Commented-out E2B and non-Q4 E4B provider blocks remain in `service_models.yaml` as quick re-enable examples.
 
 The bundled managed runtime uses the model's default context size by omitting an explicit `ctx_size` override.
-The active bundled provider currently declares `text` and `image` input support; audio requests are rejected unless provider configuration is extended to include active audio support.
+The active bundled provider currently declares `text`, `image`, and `audio` input support.
+For working Gemma 4 audio over the OpenAI-compatible HTTP path, use a recent `llama.cpp` build that reports audio modality support in `/props`; older builds such as the previously tested `b8763` exposed vision but not HTTP audio for Gemma 4.
 
 For image input, the managed runtime also needs a matching multimodal projector (`mmproj`) file.
 The checked-in `docker-compose.yml` expects:
@@ -106,10 +107,11 @@ docker-compose up --build
 
 Compose expects:
 - `./gemma` mounted to `/models`
-- `LLAMA_CPP_DIR` pointing to a directory that contains `llama-server`
-- matching `mmproj` files present in `./gemma` for image-capable providers
+- `LLAMA_CPP_DIR` pointing to a directory that contains `llama-server` and its shared libraries
+- matching `mmproj` files present in `./gemma` for image/audio-capable Gemma 4 providers
 
 The container serves traffic on port `8012`.
+The container liveness healthcheck uses `GET /health`; `GET /ready` is still available for explicit warmup/readiness probing.
 Service access logs, failure summaries, and managed runtime lifecycle logs are emitted to stdout/stderr.
 
 ## API
@@ -181,6 +183,7 @@ curl -X POST http://127.0.0.1:8012/v1/chat/completions \
 Notes:
 - image/audio structured content is supported only for configured OpenAI-compatible providers
 - image requests fail fast with `400 invalid_request` when the selected provider has no active projector support
+- some recent `llama.cpp` Gemma 4 audio responses can populate `reasoning_content` while leaving `content` empty; this repository now falls back to `reasoning_content` when needed so audio answers are surfaced instead of dropped
 - very small images can fail inside `llama.cpp`; use images of at least a few pixels in each dimension for manual smoke tests
 
 ## Development workflow

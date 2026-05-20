@@ -67,6 +67,7 @@ providers:
       input_modalities:
         - text
         - image
+        - audio
     connection:
       base_url: http://127.0.0.1:18014
       managed_server:

@@ -17,6 +17,6 @@ COPY . /app/llm
 EXPOSE 8012
 
 HEALTHCHECK --interval=10s --timeout=30s --retries=12 --start-period=60s \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8012/ready', timeout=30)" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8012/health', timeout=30)" || exit 1
 
 CMD ["sh", "-c", "gunicorn --access-logfile - --error-logfile - --bind ${LLM_SERVER_HOST:-0.0.0.0}:${LLM_SERVER_PORT:-8012} llm.service_app:app"]
