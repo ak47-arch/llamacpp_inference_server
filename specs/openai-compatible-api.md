@@ -216,4 +216,6 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 
 ### Spec Commits
 
+- 2026-05-21 | 6f75815189931e290c0df5b9a0403dd594e4858c | add canonical external API contract
+
 ### Implementation Commits
