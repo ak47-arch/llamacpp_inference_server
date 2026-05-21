@@ -10,6 +10,37 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT.parent))
 
 from llm import local_server_runtime, service_app  # noqa: E402
+from llm.provider_base import CompletionResult  # noqa: E402
+
+
+class StubRouter:
+    def __init__(self, providers: dict[str, object]):
+        self._providers = providers
+
+    def provider_ids(self):
+        return list(self._providers.keys())
+
+    def get_provider(self, provider_id: str):
+        provider = self._providers.get(provider_id)
+        if provider is None:
+            raise KeyError(provider_id)
+        return provider
+
+
+class StubProvider:
+    provider_name = "openai_compatible"
+
+    def warmup(self):
+        return None
+
+    def complete(self, prompt: str = "", system: str = "", params: dict | None = None, messages=None):
+        return CompletionResult(
+            text="ok",
+            model_id="gemma_e4b_q4_local",
+            provider=self.provider_name,
+            latency_ms=1,
+            tokens_used=1,
+        )
 
 
 class GenericInferenceServerTests(unittest.TestCase):
@@ -99,6 +130,32 @@ class GenericInferenceServerTests(unittest.TestCase):
         self.assertNotIn("0", command)
         self.assertNotIn("none", command)
         self.assertNotIn("-c", command)
+
+    def test_service_exposes_openai_compatible_models_endpoint(self):
+        app = service_app.create_app(service_app.LLMServiceRuntime(StubRouter({"gemma_e4b_q4_local": StubProvider()})))
+
+        response = app.test_client().get("/v1/models")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_json()
+        self.assertEqual(body["object"], "list")
+        self.assertEqual(body["data"], [{"id": "gemma_e4b_q4_local", "object": "model", "owned_by": "llm"}])
+
+    def test_service_exposes_openapi_contract_for_external_clients(self):
+        app = service_app.create_app(service_app.LLMServiceRuntime(StubRouter({"gemma_e4b_q4_local": StubProvider()})))
+
+        response = app.test_client().get("/openapi.json")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_json()
+        self.assertEqual(body["openapi"], "3.1.0")
+        self.assertEqual(body["info"]["title"], "Generic Inference Server API")
+        self.assertIn("/v1/chat/completions", body["paths"])
+        self.assertIn("/v1/models", body["paths"])
+        schema = body["paths"]["/v1/chat/completions"]["post"]["requestBody"]["content"]["application/json"]["schema"]
+        self.assertEqual(schema["$ref"], "#/components/schemas/ChatCompletionRequest")
+        self.assertIn("ChatCompletionRequest", body["components"]["schemas"])
+        self.assertIn("ChatCompletionResponse", body["components"]["schemas"])
 
 
 if __name__ == "__main__":

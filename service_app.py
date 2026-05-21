@@ -217,6 +217,256 @@ def _error_response(status_code: int, error_type: str, message: str):
     return jsonify({"error": {"type": error_type, "message": message}}), status_code
 
 
+def _openapi_schema() -> dict:
+    return {
+        "openapi": "3.1.0",
+        "info": {
+            "title": "Generic Inference Server API",
+            "version": "1.0.0",
+            "description": "OpenAI-compatible chat completions API for local and upstream-backed LLM providers.",
+        },
+        "paths": {
+            "/health": {
+                "get": {
+                    "summary": "Liveness probe",
+                    "responses": {
+                        "200": {
+                            "description": "Service is alive",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HealthResponse"}}},
+                        }
+                    },
+                }
+            },
+            "/ready": {
+                "get": {
+                    "summary": "Readiness probe",
+                    "responses": {
+                        "200": {
+                            "description": "Configured providers are ready",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ReadinessResponse"}}},
+                        },
+                        "503": {
+                            "description": "Runtime unavailable",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}},
+                        },
+                    },
+                }
+            },
+            "/v1/models": {
+                "get": {
+                    "summary": "List configured models",
+                    "responses": {
+                        "200": {
+                            "description": "Configured logical model ids",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ModelListResponse"}}},
+                        }
+                    },
+                }
+            },
+            "/v1/chat/completions": {
+                "post": {
+                    "summary": "OpenAI-compatible chat completions",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/ChatCompletionRequest"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Successful completion",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ChatCompletionResponse"}}},
+                        },
+                        "400": {
+                            "description": "Invalid request",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}},
+                        },
+                        "503": {
+                            "description": "Provider unavailable",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}},
+                        },
+                        "504": {
+                            "description": "Provider timed out",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}},
+                        },
+                    },
+                }
+            },
+            "/metrics": {
+                "get": {
+                    "summary": "Prometheus metrics",
+                    "responses": {"200": {"description": "Prometheus text exposition format"}},
+                }
+            },
+        },
+        "components": {
+            "schemas": {
+                "HealthResponse": {
+                    "type": "object",
+                    "properties": {
+                        "status": {"type": "string", "const": "ok"},
+                        "service": {"type": "string", "const": "inference-server"},
+                    },
+                    "required": ["status", "service"],
+                },
+                "ReadinessResponse": {
+                    "type": "object",
+                    "properties": {
+                        "ready": {"type": "boolean"},
+                        "models": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["ready", "models"],
+                },
+                "Model": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "object": {"type": "string", "const": "model"},
+                        "owned_by": {"type": "string", "const": "llm"},
+                    },
+                    "required": ["id", "object", "owned_by"],
+                },
+                "ModelListResponse": {
+                    "type": "object",
+                    "properties": {
+                        "object": {"type": "string", "const": "list"},
+                        "data": {"type": "array", "items": {"$ref": "#/components/schemas/Model"}},
+                    },
+                    "required": ["object", "data"],
+                },
+                "TextContentPart": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "const": "text"},
+                        "text": {"type": "string"},
+                    },
+                    "required": ["type", "text"],
+                },
+                "ImageUrlContentPart": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "const": "image_url"},
+                        "image_url": {
+                            "type": "object",
+                            "properties": {"url": {"type": "string"}},
+                            "required": ["url"],
+                        },
+                    },
+                    "required": ["type", "image_url"],
+                },
+                "InputAudioContentPart": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "const": "input_audio"},
+                        "input_audio": {
+                            "type": "object",
+                            "properties": {
+                                "data": {"type": "string"},
+                                "format": {"type": "string"},
+                            },
+                            "required": ["data", "format"],
+                        },
+                    },
+                    "required": ["type", "input_audio"],
+                },
+                "ChatMessage": {
+                    "type": "object",
+                    "properties": {
+                        "role": {"type": "string"},
+                        "content": {
+                            "oneOf": [
+                                {"type": "string"},
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "oneOf": [
+                                            {"$ref": "#/components/schemas/TextContentPart"},
+                                            {"$ref": "#/components/schemas/ImageUrlContentPart"},
+                                            {"$ref": "#/components/schemas/InputAudioContentPart"},
+                                        ]
+                                    },
+                                },
+                            ]
+                        },
+                    },
+                    "required": ["role", "content"],
+                },
+                "ChatCompletionRequest": {
+                    "type": "object",
+                    "properties": {
+                        "model": {"type": "string"},
+                        "messages": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/ChatMessage"},
+                            "minItems": 1,
+                        },
+                        "temperature": {"type": "number"},
+                        "max_tokens": {"type": "integer"},
+                        "timeout_seconds": {"type": "number"},
+                    },
+                    "required": ["model", "messages"],
+                },
+                "ChatCompletionChoice": {
+                    "type": "object",
+                    "properties": {
+                        "index": {"type": "integer"},
+                        "message": {
+                            "type": "object",
+                            "properties": {
+                                "role": {"type": "string", "const": "assistant"},
+                                "content": {"type": "string"},
+                            },
+                            "required": ["role", "content"],
+                        },
+                        "finish_reason": {"type": "string"},
+                    },
+                    "required": ["index", "message", "finish_reason"],
+                },
+                "Usage": {
+                    "type": "object",
+                    "properties": {
+                        "prompt_tokens": {"type": ["integer", "null"]},
+                        "completion_tokens": {"type": ["integer", "null"]},
+                        "total_tokens": {"type": ["integer", "null"]},
+                    },
+                    "required": ["prompt_tokens", "completion_tokens", "total_tokens"],
+                },
+                "ChatCompletionResponse": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "object": {"type": "string", "const": "chat.completion"},
+                        "created": {"type": "integer"},
+                        "model": {"type": "string"},
+                        "choices": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/ChatCompletionChoice"},
+                        },
+                        "usage": {"$ref": "#/components/schemas/Usage"},
+                    },
+                    "required": ["id", "object", "created", "model", "choices", "usage"],
+                },
+                "ErrorResponse": {
+                    "type": "object",
+                    "properties": {
+                        "error": {
+                            "type": "object",
+                            "properties": {
+                                "type": {"type": "string"},
+                                "message": {"type": "string"},
+                            },
+                            "required": ["type", "message"],
+                        }
+                    },
+                    "required": ["error"],
+                },
+            }
+        },
+    }
+
+
 def create_app(runtime: LLMServiceRuntime | None = None) -> Flask:
     app = Flask(__name__)
     service_runtime = runtime or build_runtime()
@@ -301,6 +551,18 @@ def create_app(runtime: LLMServiceRuntime | None = None) -> Flask:
             )
             return response
 
+    @app.get("/v1/models")
+    def list_models():
+        return jsonify(
+            {
+                "object": "list",
+                "data": [
+                    {"id": model_id, "object": "model", "owned_by": "llm"}
+                    for model_id in service_runtime.router.provider_ids()
+                ],
+            }
+        )
+
     @app.post("/v1/chat/completions")
     def chat_completions():
         route = "/v1/chat/completions"
@@ -350,6 +612,10 @@ def create_app(runtime: LLMServiceRuntime | None = None) -> Flask:
                 duration_seconds=duration_seconds,
             )
             return response
+
+    @app.get("/openapi.json")
+    def openapi_schema():
+        return jsonify(_openapi_schema())
 
     @app.get("/metrics")
     def metrics():

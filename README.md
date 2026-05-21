@@ -52,6 +52,8 @@ Starts and manages local `llama-server` processes on demand.
 Flask application exposing:
 - `GET /health`
 - `GET /ready`
+- `GET /openapi.json`
+- `GET /v1/models`
 - `GET /metrics`
 - `POST /v1/chat/completions`
 
@@ -132,6 +134,33 @@ Example response:
 
 ```bash
 curl http://127.0.0.1:8012/ready
+```
+
+### OpenAPI contract
+
+```bash
+curl http://127.0.0.1:8012/openapi.json
+```
+
+### Models
+
+```bash
+curl http://127.0.0.1:8012/v1/models
+```
+
+Example response:
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "gemma_e4b_q4_local",
+      "object": "model",
+      "owned_by": "llm"
+    }
+  ]
+}
 ```
 
 ### Metrics
