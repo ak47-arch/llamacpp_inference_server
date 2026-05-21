@@ -21,12 +21,14 @@ This file is both:
 - Enabled bundled Gemma E4B Q4 audio input support, documented the requirement for a newer `llama.cpp` build, and taught the provider to surface `reasoning_content` when audio-capable backends leave `message.content` empty.
 - Updated container/runtime documentation so liveness healthchecks use `/health` instead of `/ready`, avoiding readiness-triggered warmup loops during development.
 - Added a canonical external API contract spec for the service HTTP surface, including model discovery and published OpenAPI schema endpoints.
+- Published `GET /openapi.json` and `GET /v1/models` so external applications can discover the HTTP contract and available logical model ids.
 
 ### Traceability Ledger
 
 - 2026-05-19 | spec: specs/openai-compatible-provider.md | kind: implementation | commit: 4865b2a81eb5d26c71574ca33af69c25b91f3545 | summary: simplify bundled config to the active e4b q4 provider and use model-default context sizing
 - 2026-05-20 | spec: specs/openai-compatible-provider.md | kind: implementation | commit: 6167becd1cd4673035d368e9cf351c81778c4a00 | summary: enable bundled gemma audio path, add reasoning_content fallback, and update runtime/docs
 - 2026-05-21 | spec: specs/openai-compatible-api.md | kind: spec | commit: 6f75815189931e290c0df5b9a0403dd594e4858c | summary: add canonical external API contract
+- 2026-05-21 | spec: specs/openai-compatible-api.md | kind: implementation | commit: 83fad9bd6efb0a1c29826480a24376ee31e01c97 | summary: publish OpenAPI contract and model discovery
 
 ## v0.1.0 - 2026-05-19
 
