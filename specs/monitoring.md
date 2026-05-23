@@ -344,6 +344,7 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 ### Spec Commits
 
 - 2026-05-17 | 297a8299eb0eca77c33cd9118227f818e2b57cf2 | add canonical monitoring and observability spec
+- 2026-05-23 | 392b6802de46371885bc9256d805eb17c6ec9240 | allow bounded feature-owned metrics in shared monitoring module
 
 ### Implementation Commits
 

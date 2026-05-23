@@ -23,6 +23,7 @@ This file is both:
 - Added a canonical external API contract spec for the service HTTP surface, including model discovery and published OpenAPI schema endpoints.
 - Published `GET /openapi.json` and `GET /v1/models` so external applications can discover the HTTP contract and available logical model ids.
 - Added an approved canonical spec for prompt and multimodal-asset capture, explicitly separating capture from downstream dataset/training workflows.
+- Clarified the monitoring spec so additional feature-owned metrics may share `monitoring.py` as long as they preserve bounded low-privacy labels.
 
 ### Traceability Ledger
 
@@ -31,6 +32,7 @@ This file is both:
 - 2026-05-21 | spec: specs/openai-compatible-api.md | kind: spec | commit: 6f75815189931e290c0df5b9a0403dd594e4858c | summary: add canonical external API contract
 - 2026-05-21 | spec: specs/openai-compatible-api.md | kind: implementation | commit: 83fad9bd6efb0a1c29826480a24376ee31e01c97 | summary: publish OpenAPI contract and model discovery
 - 2026-05-21 | spec: specs/prompt-capture.md | kind: spec | commit: 721172b62703d786c17ab624f98e8f89deb2c952 | summary: add canonical capture spec
+- 2026-05-23 | spec: specs/monitoring.md | kind: spec | commit: 392b6802de46371885bc9256d805eb17c6ec9240 | summary: allow bounded feature-owned metrics in shared monitoring module
 
 ## v0.1.0 - 2026-05-19
 
