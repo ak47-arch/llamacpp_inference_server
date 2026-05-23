@@ -22,6 +22,7 @@ This file is both:
 - Updated container/runtime documentation so liveness healthchecks use `/health` instead of `/ready`, avoiding readiness-triggered warmup loops during development.
 - Added a canonical external API contract spec for the service HTTP surface, including model discovery and published OpenAPI schema endpoints.
 - Published `GET /openapi.json` and `GET /v1/models` so external applications can discover the HTTP contract and available logical model ids.
+- Added an approved canonical spec for prompt and multimodal-asset capture, explicitly separating capture from downstream dataset/training workflows.
 
 ### Traceability Ledger
 
@@ -29,6 +30,7 @@ This file is both:
 - 2026-05-20 | spec: specs/openai-compatible-provider.md | kind: implementation | commit: 6167becd1cd4673035d368e9cf351c81778c4a00 | summary: enable bundled gemma audio path, add reasoning_content fallback, and update runtime/docs
 - 2026-05-21 | spec: specs/openai-compatible-api.md | kind: spec | commit: 6f75815189931e290c0df5b9a0403dd594e4858c | summary: add canonical external API contract
 - 2026-05-21 | spec: specs/openai-compatible-api.md | kind: implementation | commit: 83fad9bd6efb0a1c29826480a24376ee31e01c97 | summary: publish OpenAPI contract and model discovery
+- 2026-05-21 | spec: specs/prompt-capture.md | kind: spec | commit: 721172b62703d786c17ab624f98e8f89deb2c952 | summary: add canonical capture spec
 
 ## v0.1.0 - 2026-05-19
 
