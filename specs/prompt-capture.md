@@ -285,3 +285,5 @@ Append only non-traceability commit hashes here. Traceability-only commits do no
 - 2026-05-21 | 721172b62703d786c17ab624f98e8f89deb2c952 | add canonical capture spec
 
 ### Implementation Commits
+
+- 2026-05-23 | 241931c51d84ed2c508c233c3830b4ec7ad14c21 | capture prompts and multimodal assets

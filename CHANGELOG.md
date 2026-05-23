@@ -24,6 +24,7 @@ This file is both:
 - Published `GET /openapi.json` and `GET /v1/models` so external applications can discover the HTTP contract and available logical model ids.
 - Added an approved canonical spec for prompt and multimodal-asset capture, explicitly separating capture from downstream dataset/training workflows.
 - Clarified the monitoring spec so additional feature-owned metrics may share `monitoring.py` as long as they preserve bounded low-privacy labels.
+- Added opt-in async prompt capture with an NDJSON sink, metadata/full modes, low-cardinality capture metrics, and default omission of inline media bytes unless explicitly enabled.
 
 ### Traceability Ledger
 
@@ -33,6 +34,8 @@ This file is both:
 - 2026-05-21 | spec: specs/openai-compatible-api.md | kind: implementation | commit: 83fad9bd6efb0a1c29826480a24376ee31e01c97 | summary: publish OpenAPI contract and model discovery
 - 2026-05-21 | spec: specs/prompt-capture.md | kind: spec | commit: 721172b62703d786c17ab624f98e8f89deb2c952 | summary: add canonical capture spec
 - 2026-05-23 | spec: specs/monitoring.md | kind: spec | commit: 392b6802de46371885bc9256d805eb17c6ec9240 | summary: allow bounded feature-owned metrics in shared monitoring module
+- 2026-05-23 | spec: specs/prompt-capture.md | kind: implementation | commit: 241931c51d84ed2c508c233c3830b4ec7ad14c21 | summary: capture prompts and multimodal assets
+- 2026-05-23 | spec: specs/monitoring.md | kind: implementation | commit: 241931c51d84ed2c508c233c3830b4ec7ad14c21 | summary: add bounded prompt-capture record metrics to the shared monitoring module
 
 ## v0.1.0 - 2026-05-19
 
