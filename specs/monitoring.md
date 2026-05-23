@@ -18,6 +18,7 @@ This spec covers:
 - provider/model-labeled outcome metrics for `POST /v1/chat/completions`
 - managed local runtime startup telemetry from `local_server_runtime.py`
 - a dedicated instrumentation module that centralizes metric definitions and updates
+- the bounded-label rules that additional feature-owned metrics must also respect when they share `monitoring.py`
 - dependency and test changes required to support this capability
 
 This spec does not cover:
@@ -74,6 +75,8 @@ Metric labels remain low-cardinality and bounded to:
 
 No metric label may contain request ids, prompt-derived fields, exception text, or other unbounded user-controlled values.
 
+Additional feature-owned metrics may be exposed from the shared `monitoring.py` module when governed by their own canonical specs, but they must still obey the same bounded-label and low-privacy rules documented here.
+
 The first implementation instruments these routes:
 
 - `GET /health`
@@ -118,7 +121,7 @@ When a managed runtime launch fails after a process spawn attempt, the startup f
 
 ### Metric names
 
-The monitoring module exposes these metric families:
+This spec directly governs these core metric families:
 
 - `llm_service_requests_total`
 - `llm_service_in_flight_requests`
