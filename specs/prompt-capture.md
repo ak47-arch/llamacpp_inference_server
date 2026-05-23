@@ -2,7 +2,7 @@
 
 ## Status
 
-APPROVED
+VERIFIED
 
 ## Purpose
 
@@ -72,7 +72,12 @@ Capture behavior is controlled by configuration modes:
 - `metadata` — capture request/response metadata only, without raw prompt or completion text
 - `full` — capture full normalized messages, params, completion output, and selected metadata after configured redaction
 
-The first implementation phase should support at least one durable sink intended for local operation, such as NDJSON append-only files or SQLite. Additional sinks may be added later behind the same sink interface.
+The first implemented durable sink is an NDJSON append-only file sink. When prompt capture is enabled through environment variables, the repository currently supports:
+
+- `LLM_CAPTURE_SINK=ndjson`
+- `LLM_CAPTURE_FILE_PATH=/absolute/path/to/capture.ndjson`
+
+Additional sinks may be added later behind the same sink interface.
 
 Multimodal capture stores structured request content in normalized form. Raw inline image/audio payload bytes are not stored by default. Instead, metadata mode stores modality, approximate size, and checksum/fingerprint fields only. Full mode may store raw inline payloads only when explicitly enabled by configuration.
 
@@ -103,6 +108,7 @@ Equivalent environment variables may include:
 - `LLM_CAPTURE_STORE_INLINE_MEDIA`
 - `LLM_CAPTURE_INCLUDE_SYSTEM_PROMPTS`
 - `LLM_CAPTURE_INCLUDE_ERROR_RECORDS`
+- `LLM_CAPTURE_FILE_PATH` for the NDJSON sink
 
 ### Capture record shape
 
@@ -248,7 +254,7 @@ For structured content-part arrays:
 
 ## Test Plan
 
-- verify capture disabled by default and no sink writes occur during normal chat completions
+- verify capture disabled by default and no capture samples are emitted during normal chat completions
 - verify metadata mode persists a record with request_id, model, status, counts, modality metadata, and no raw prompt/completion text
 - verify full mode persists normalized messages and assistant response while excluding system prompts by default
 - verify explicit config can include system prompts when desired

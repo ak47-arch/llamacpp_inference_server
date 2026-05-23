@@ -18,6 +18,7 @@ _readiness_duration_seconds = None
 _managed_server_startups_total = None
 _managed_server_startup_duration_seconds = None
 _managed_server_restarts_total = None
+_prompt_capture_records_total = None
 
 
 REQUEST_BUCKETS = (0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0)
@@ -36,6 +37,7 @@ def reset_metrics() -> None:
     global _managed_server_startups_total
     global _managed_server_startup_duration_seconds
     global _managed_server_restarts_total
+    global _prompt_capture_records_total
 
     _registry = CollectorRegistry(auto_describe=True)
     _requests_total = Counter(
@@ -94,6 +96,12 @@ def reset_metrics() -> None:
         "llm_service_managed_server_restarts_total",
         "Managed server replacement launches after an exited tracked process.",
         labelnames=("model", "base_url"),
+        registry=_registry,
+    )
+    _prompt_capture_records_total = Counter(
+        "llm_prompt_capture_records_total",
+        "Prompt-capture records by capture mode and result.",
+        labelnames=("mode", "result"),
         registry=_registry,
     )
     _REQUEST_CONTEXT.set(None)
@@ -254,6 +262,13 @@ def increment_managed_server_restart(model: str, base_url: str) -> None:
     _managed_server_restarts_total.labels(
         model=_normalize_label(model),
         base_url=_normalize_label(base_url),
+    ).inc()
+
+
+def observe_prompt_capture(mode: str, result: str) -> None:
+    _prompt_capture_records_total.labels(
+        mode=_normalize_label(mode),
+        result=_normalize_label(result),
     ).inc()
 
 

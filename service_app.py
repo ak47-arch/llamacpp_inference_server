@@ -7,7 +7,7 @@ import time
 
 from flask import Flask, Response, jsonify, request
 
-from . import monitoring
+from . import monitoring, prompt_capture
 from .provider_base import ProviderTimeoutError, ProviderUnavailableError
 from .router import ProviderRouter
 
@@ -213,8 +213,12 @@ class LLMServiceRuntime:
         }
 
 
+def _error_body(error_type: str, message: str) -> dict:
+    return {"error": {"type": error_type, "message": message}}
+
+
 def _error_response(status_code: int, error_type: str, message: str):
-    return jsonify({"error": {"type": error_type, "message": message}}), status_code
+    return jsonify(_error_body(error_type, message)), status_code
 
 
 def _openapi_schema() -> dict:
@@ -467,9 +471,11 @@ def _openapi_schema() -> dict:
     }
 
 
-def create_app(runtime: LLMServiceRuntime | None = None) -> Flask:
+def create_app(runtime: LLMServiceRuntime | None = None, capture_manager: prompt_capture.PromptCaptureManager | None = None) -> Flask:
     app = Flask(__name__)
     service_runtime = runtime or build_runtime()
+    prompt_capture_manager = capture_manager or prompt_capture.build_capture_manager_from_env()
+    app.extensions["prompt_capture_manager"] = prompt_capture_manager
 
     @app.get("/health")
     def health():
@@ -568,25 +574,31 @@ def create_app(runtime: LLMServiceRuntime | None = None) -> Flask:
         route = "/v1/chat/completions"
         start = time.monotonic()
         payload = request.get_json(silent=True) or {}
+        request_id = prompt_capture_manager.new_request_id()
         with monitoring.request_context(route), monitoring.track_in_flight(route):
             try:
-                response = jsonify(service_runtime.complete_chat(payload))
+                response_body = service_runtime.complete_chat(payload)
                 outcome = "success"
                 status_code = 200
+                response = jsonify(response_body)
             except ValueError as exc:
                 outcome = "client_error"
                 status_code = 400
-                response = _error_response(400, "invalid_request", str(exc))
+                response_body = _error_body("invalid_request", str(exc))
+                response = jsonify(response_body), status_code
             except ProviderTimeoutError as exc:
                 outcome = "timeout"
                 status_code = 504
-                response = _error_response(504, "timeout", str(exc))
+                response_body = _error_body("timeout", str(exc))
+                response = jsonify(response_body), status_code
             except (ProviderUnavailableError, RuntimeError, KeyError) as exc:
                 outcome = monitoring.classify_exception(exc)
                 status_code = 503
-                response = _error_response(503, "runtime_unavailable", str(exc))
+                response_body = _error_body("runtime_unavailable", str(exc))
+                response = jsonify(response_body), status_code
             except Exception as exc:
                 duration_seconds = time.monotonic() - start
+                response_body = _error_body("server_error", str(exc))
                 _log_service_failure(route, 500, "server_error")
                 _log_service_access(request.method, route, 500, duration_seconds)
                 model, provider = monitoring.current_request_labels()
@@ -596,6 +608,16 @@ def create_app(runtime: LLMServiceRuntime | None = None) -> Flask:
                     provider=provider,
                     outcome=monitoring.classify_exception(exc),
                     duration_seconds=duration_seconds,
+                )
+                prompt_capture_manager.capture_chat_completion(
+                    request_id=request_id,
+                    route=route,
+                    payload=payload,
+                    model=model,
+                    provider=provider,
+                    status_code=500,
+                    outcome="server_error",
+                    response_body=response_body,
                 )
                 raise
 
@@ -610,6 +632,16 @@ def create_app(runtime: LLMServiceRuntime | None = None) -> Flask:
                 provider=provider,
                 outcome=outcome,
                 duration_seconds=duration_seconds,
+            )
+            prompt_capture_manager.capture_chat_completion(
+                request_id=request_id,
+                route=route,
+                payload=payload,
+                model=model,
+                provider=provider,
+                status_code=status_code,
+                outcome=outcome,
+                response_body=response_body,
             )
             return response
 

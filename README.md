@@ -10,6 +10,7 @@ It provides:
 - structured multimodal OpenAI-style message support for configured OpenAI-compatible providers
 - Prometheus-compatible `GET /metrics`
 - safe operational logging to stdout/stderr for service and managed runtime flows
+- optional durable prompt/asset capture for chat-completions traffic
 - Docker packaging for standalone deployment
 
 ## Repository layout
@@ -22,6 +23,8 @@ It provides:
 ├── openai_compatible_provider.py
 ├── llama_cpp_provider.py
 ├── local_server_runtime.py
+├── capture_sinks.py
+├── prompt_capture.py
 ├── service_app.py
 ├── service_models.yaml
 ├── Dockerfile
@@ -47,6 +50,12 @@ Runs `llama-cli` directly through a subprocess.
 
 ### `local_server_runtime.py`
 Starts and manages local `llama-server` processes on demand.
+
+### `capture_sinks.py`
+Durable sinks for prompt-capture records.
+
+### `prompt_capture.py`
+Async prompt and multimodal-asset capture pipeline for chat-completions traffic.
 
 ### `service_app.py`
 Flask application exposing:
@@ -115,6 +124,25 @@ Compose expects:
 The container serves traffic on port `8012`.
 The container liveness healthcheck uses `GET /health`; `GET /ready` is still available for explicit warmup/readiness probing.
 Service access logs, failure summaries, and managed runtime lifecycle logs are emitted to stdout/stderr.
+
+### Optional prompt capture
+
+Prompt capture is separate from operational logs and is disabled by default.
+
+Current sink support:
+- `LLM_CAPTURE_ENABLED=true`
+- `LLM_CAPTURE_MODE=metadata` or `LLM_CAPTURE_MODE=full`
+- `LLM_CAPTURE_SINK=ndjson`
+- `LLM_CAPTURE_FILE_PATH=/absolute/path/to/capture.ndjson`
+
+Useful optional controls:
+- `LLM_CAPTURE_INCLUDE_SYSTEM_PROMPTS=true`
+- `LLM_CAPTURE_STORE_INLINE_MEDIA=true`
+- `LLM_CAPTURE_INCLUDE_ERROR_RECORDS=true`
+- `LLM_CAPTURE_QUEUE_MAX_RECORDS=1000`
+- `LLM_CAPTURE_REDACTION_LEVEL=off|basic|strict`
+
+By default, inline image/audio payloads are not stored even in `full` mode unless `LLM_CAPTURE_STORE_INLINE_MEDIA=true` is explicitly set.
 
 ## API
 
