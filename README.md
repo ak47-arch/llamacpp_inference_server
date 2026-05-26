@@ -121,9 +121,14 @@ Compose expects:
 - `LLAMA_CPP_DIR` pointing to a directory that contains `llama-server` and its shared libraries
 - matching `mmproj` files present in `./gemma` for image/audio-capable Gemma 4 providers
 
+Optional runtime tuning:
+- `GUNICORN_TIMEOUT` sets the Gunicorn request timeout in seconds (default `600` in the container image).
+- For long-running local inferences, increase `GUNICORN_TIMEOUT` to reduce gateway-timeout responses from upstream clients.
+
 The container serves traffic on port `8012`.
 The container liveness healthcheck uses `GET /health`; `GET /ready` is still available for explicit warmup/readiness probing.
 Service access logs, failure summaries, and managed runtime lifecycle logs are emitted to stdout/stderr.
+When an upstream client timeout occurs, `/metrics` reports it under `llm_service_requests_total` with `outcome="timeout"` for the relevant route/model/provider labels.
 
 ### Optional prompt capture
 

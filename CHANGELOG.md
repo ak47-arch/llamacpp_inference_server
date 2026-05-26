@@ -25,6 +25,7 @@ This file is both:
 - Added an approved canonical spec for prompt and multimodal-asset capture, explicitly separating capture from downstream dataset/training workflows.
 - Clarified the monitoring spec so additional feature-owned metrics may share `monitoring.py` as long as they preserve bounded low-privacy labels.
 - Added opt-in async prompt capture with an NDJSON sink, metadata/full modes, low-cardinality capture metrics, and default omission of inline media bytes unless explicitly enabled.
+- Raised the container Gunicorn timeout default to 600 seconds and documented `GUNICORN_TIMEOUT` so long local inferences are less likely to fail with request timeouts.
 
 ### Traceability Ledger
 
