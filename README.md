@@ -113,13 +113,22 @@ python -m llm.service_app
 Build and run with Docker Compose:
 
 ```bash
-docker-compose up --build
+bash scripts/compose_env_preflight.sh
+LLAMA_CPP_DIR=/home/anupam/llama-cpp/llama-b8763 docker-compose up --build
 ```
 
 Compose expects:
 - `./gemma` mounted to `/models`
 - `LLAMA_CPP_DIR` pointing to a directory that contains `llama-server` and its shared libraries
 - matching `mmproj` files present in `./gemma` for image/audio-capable Gemma 4 providers
+
+Preflight:
+- `scripts/compose_env_preflight.sh` fails fast unless `LLAMA_CPP_DIR` is set, exists, and exposes an executable `llama-server`
+
+Network note:
+- the compose stack now uses the external shared network `workspace-shared-llm-network`
+- create it first with `docker network create workspace-shared-llm-network` when running the standalone `llm` repo directly
+- when starting through `survival-infrastructure/start_stack.sh`, the network is created automatically
 
 Optional runtime tuning:
 - `GUNICORN_TIMEOUT` sets the Gunicorn request timeout in seconds (default `600` in the container image).
