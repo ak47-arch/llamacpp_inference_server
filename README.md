@@ -11,7 +11,7 @@ It provides:
 - Prometheus-compatible `GET /metrics`
 - safe operational logging to stdout/stderr for service and managed runtime flows
 - optional durable prompt/asset capture for chat-completions traffic
-- Docker packaging for standalone deployment
+- container packaging for standalone deployment
 
 ## Repository layout
 
@@ -108,13 +108,24 @@ export LLM_SERVER_CONFIG_FILE=/absolute/path/to/llm/service_models.yaml
 python -m llm.service_app
 ```
 
-## Docker
+## Containers
 
-Build and run with Docker Compose:
+Podman is the default runtime. Docker remains a supported fallback.
+
+Build and run with Podman Compose:
 
 ```bash
+podman network create workspace-shared-llm-network
 bash scripts/compose_env_preflight.sh
-LLAMA_CPP_DIR=/home/anupam/llama-cpp/llama-b8763 docker-compose up --build
+LLAMA_CPP_DIR=/home/anupam/llama-cpp/llama-b8763 podman compose up --build
+```
+
+Docker fallback:
+
+```bash
+docker network create workspace-shared-llm-network
+bash scripts/compose_env_preflight.sh
+LLAMA_CPP_DIR=/home/anupam/llama-cpp/llama-b8763 docker compose up --build
 ```
 
 Compose expects:
@@ -127,8 +138,9 @@ Preflight:
 
 Network note:
 - the compose stack now uses the external shared network `workspace-shared-llm-network`
-- create it first with `docker network create workspace-shared-llm-network` when running the standalone `llm` repo directly
-- when starting through `survival-infrastructure/start_stack.sh`, the network is created automatically
+- create it first with `podman network create workspace-shared-llm-network` for the default Podman path
+- Docker fallback uses `docker network create workspace-shared-llm-network`
+- when starting through `survival-infrastructure/start_stack.sh`, the network is created automatically for the selected runtime
 
 Optional runtime tuning:
 - `GUNICORN_TIMEOUT` sets the Gunicorn request timeout in seconds (default `600` in the container image).
