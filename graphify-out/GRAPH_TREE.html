@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Llm — graphify tree viewer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      margin: 20px 0 0 24px;
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: #1e3a56;
+    }
+    .controls {
+      margin: 20px 0 15px 24px;
+    }
+    button {
+      margin-right: 10px;
+      padding: 8px 18px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:active {
+      background: #004085;
+    }
+    #tree-container {
+      width: calc(100vw - 48px); /* Adjust for body margin/padding */
+      height: 85vh;
+      overflow: auto;
+      border-radius: 8px;
+      background: #fff;
+      margin-left: 24px;
+      margin-right: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border: 1px solid #ddd;
+    }
+    svg {
+      background: #fff;
+      border-radius: 8px;
+      display: block; /* Important for D3 */
+    }
+    .node circle {
+      stroke-width: 2.5px;
+    }
+    .node text { /* Base style for the <text> container */
+      font: 13px 'Segoe UI', sans-serif;
+      paint-order: stroke fill; /* Ensures text is readable over lines */
+      stroke: #fff; /* White halo */
+      stroke-width: 3px; /* Halo thickness */
+      stroke-linejoin: round;
+      stroke-opacity: 0.85; /* Halo opacity */
+    }
+    .link {
+      fill: none;
+      stroke-opacity: 0.7;
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Llm — Knowledge Graph</h1>
+  <div class="controls">
+    <button onclick="expandAll()">Expand All</button>
+    <button onclick="collapseAll()">Collapse All</button>
+    <button onclick="resetView()">Reset View</button>
+  </div>
+  <div id="tree-container">
+    <svg id="tree-svg" width="6000" height="8000"></svg>
+  </div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    const initialJsonData = {"name":"Llm","total_count":728,"children":[{"name":"__init__.py","total_count":1,"children":[{"name":"Generic inference server package.","total_count":1,"children":[]}]},{"name":"capture_sinks.py","total_count":7,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".write()","total_count":1,"children":[]},{"name":".write()","total_count":1,"children":[]},{"name":"CaptureSink","total_count":1,"children":[]},{"name":"Durable sinks for prompt-capture records.","total_count":1,"children":[]},{"name":"NDJSONCaptureSink","total_count":1,"children":[]},{"name":"Path","total_count":1,"children":[]}]},{"name":"CHANGELOG.md","total_count":9,"children":[{"name":"Changelog","total_count":1,"children":[]},{"name":"CHANGELOG.md","total_count":1,"children":[]},{"name":"Rules","total_count":1,"children":[]},{"name":"Summary","total_count":1,"children":[]},{"name":"Summary","total_count":1,"children":[]},{"name":"Traceability Ledger","total_count":1,"children":[]},{"name":"Traceability Ledger","total_count":1,"children":[]},{"name":"Unreleased","total_count":1,"children":[]},{"name":"v0.1.0 - 2026-05-19","total_count":1,"children":[]}]},{"name":"compose_env_preflight.sh","total_count":1,"children":[{"name":"compose_env_preflight.sh script","total_count":1,"children":[]}]},{"name":"DOCKER_RUNTIME_OBSERVATIONS.md","total_count":19,"children":[{"name":"`gemma_e2b_local`","total_count":1,"children":[]},{"name":"`gemma_e4b_q4_local`","total_count":1,"children":[]},{"name":"Build Result","total_count":1,"children":[]},{"name":"Cleanup","total_count":1,"children":[]},{"name":"Current Assessment","total_count":1,"children":[]},{"name":"Deferred Follow-Up","total_count":1,"children":[]},{"name":"Docker Runtime Observations","total_count":1,"children":[]},{"name":"DOCKER_RUNTIME_OBSERVATIONS.md","total_count":1,"children":[]},{"name":"Goal","total_count":1,"children":[]},{"name":"Inference Verification","total_count":1,"children":[]},{"name":"Initial failure mode","total_count":1,"children":[]},{"name":"Key Finding","total_count":1,"children":[]},{"name":"Measured Sequential Request Times","total_count":1,"children":[]},{"name":"Not yet operationally acceptable","total_count":1,"children":[]},{"name":"Readiness Result","total_count":1,"children":[]},{"name":"Runtime Environment Used","total_count":1,"children":[]},{"name":"Useful Endpoints During Later Investigation","total_count":1,"children":[]},{"name":"Workaround that succeeded","total_count":1,"children":[]},{"name":"Working","total_count":1,"children":[]}]},{"name":"feature-development-workflow.md","total_count":17,"children":[{"name":"Acceptance Criteria","total_count":1,"children":[]},{"name":"Current Behavior","total_count":1,"children":[]},{"name":"Data Model","total_count":1,"children":[]},{"name":"Edge Cases","total_count":1,"children":[]},{"name":"Feature Development Workflow","total_count":1,"children":[]},{"name":"feature-development-workflow.md","total_count":1,"children":[]},{"name":"Implementation Commits","total_count":1,"children":[]},{"name":"Interfaces","total_count":1,"children":[]},{"name":"Module Ownership","total_count":1,"children":[]},{"name":"Out of Scope","total_count":1,"children":[]},{"name":"Purpose","total_count":1,"children":[]},{"name":"Rules and Invariants","total_count":1,"children":[]},{"name":"Scope","total_count":1,"children":[]},{"name":"Spec Commits","total_count":1,"children":[]},{"name":"Status","total_count":1,"children":[]},{"name":"Test Plan","total_count":1,"children":[]},{"name":"Traceability","total_count":1,"children":[]}]},{"name":"FEATURE_DEVELOPMENT_WORKFLOW.md","total_count":28,"children":[{"name":"Bootstrap Rule for This Repository","total_count":1,"children":[]},{"name":"Canonical spec traceability format","total_count":1,"children":[]},{"name":"Changelog Rules","total_count":1,"children":[]},{"name":"Changelog traceability format","total_count":1,"children":[]},{"name":"Choosing the Owning Spec","total_count":1,"children":[]},{"name":"Core Rules","total_count":1,"children":[]},{"name":"Feature Development Workflow","total_count":1,"children":[]},{"name":"FEATURE_DEVELOPMENT_WORKFLOW.md","total_count":1,"children":[]},{"name":"Migration Guidance","total_count":1,"children":[]},{"name":"Naming Guidance","total_count":1,"children":[]},{"name":"Phase 0 \u2014 Discovery","total_count":1,"children":[]},{"name":"Phase 1 \u2014 Spec Update","total_count":1,"children":[]},{"name":"Phase 2 \u2014 Approval","total_count":1,"children":[]},{"name":"Phase 3 \u2014 Spec Commit","total_count":1,"children":[]},{"name":"Phase 4 \u2014 Spec Traceability Commit","total_count":1,"children":[]},{"name":"Phase 5 \u2014 Tests First","total_count":1,"children":[]},{"name":"Phase 6 \u2014 Implementation","total_count":1,"children":[]},{"name":"Phase 7 \u2014 Verification","total_count":1,"children":[]},{"name":"Phase 8 \u2014 Implementation Commit","total_count":1,"children":[]},{"name":"Phase 9 \u2014 Implementation Traceability Commit","total_count":1,"children":[]},{"name":"PR / Review Checklist","total_count":1,"children":[]},{"name":"Repository Artifacts","total_count":1,"children":[]},{"name":"Standard Workflow","total_count":1,"children":[]},{"name":"Status Values","total_count":1,"children":[]},{"name":"Traceability Rules","total_count":1,"children":[]},{"name":"What does not get recorded","total_count":1,"children":[]},{"name":"What must be recorded","total_count":1,"children":[]},{"name":"Why","total_count":1,"children":[]}]},{"name":"FEATURE_MATRIX.md","total_count":8,"children":[{"name":"Configurable but not really surfaced as product features","total_count":1,"children":[]},{"name":"Feature Matrix","total_count":1,"children":[]},{"name":"FEATURE_MATRIX.md","total_count":1,"children":[]},{"name":"Implemented","total_count":1,"children":[]},{"name":"Not currently provided","total_count":1,"children":[]},{"name":"Practical summary","total_count":1,"children":[]},{"name":"What it is not yet","total_count":1,"children":[]},{"name":"What the project is now","total_count":1,"children":[]}]},{"name":"GEMMA4_NOTES.md","total_count":26,"children":[{"name":"1. Gemma 4 Model Family","total_count":1,"children":[]},{"name":"2. Downloaded Models","total_count":1,"children":[]},{"name":"3. Benchmark Results (CPU-Only, 8 Threads, `llama-cli`)","total_count":1,"children":[]},{"name":"4. llama.cpp Setup & Run Commands","total_count":1,"children":[]},{"name":"5. Smoke Test Results","total_count":1,"children":[]},{"name":"6. On-Device / Edge Deployment Assessment","total_count":1,"children":[]},{"name":"7. Quantization Reference","total_count":1,"children":[]},{"name":"8. HuggingFace Download Commands","total_count":1,"children":[]},{"name":"9. Lessons Learned / Gotchas","total_count":1,"children":[]},{"name":"Browser (WebGPU) \u2014 estimate","total_count":1,"children":[]},{"name":"Conclusion","total_count":1,"children":[]},{"name":"CPU (desktop, 8 cores)","total_count":1,"children":[]},{"name":"E2B \u2014 IQ2_M","total_count":1,"children":[]},{"name":"E2B \u2014 Q4_K_M","total_count":1,"children":[]},{"name":"E4B \u2014 Q4_K_M","total_count":1,"children":[]},{"name":"E4B \u2014 UD-IQ2_M","total_count":1,"children":[]},{"name":"Gemma 4 Models \u2014 Research & Benchmark Notes","total_count":1,"children":[]},{"name":"GEMMA4_NOTES.md","total_count":1,"children":[]},{"name":"Generation Speed (tokens/second)","total_count":1,"children":[]},{"name":"Installation","total_count":1,"children":[]},{"name":"Key Observations","total_count":1,"children":[]},{"name":"Old Android/iOS Phones (native app via llama.cpp)","total_count":1,"children":[]},{"name":"Piped Non-Interactive (for scripting)","total_count":1,"children":[]},{"name":"Real-World Latency Estimate (E2B Q4_K_M)","total_count":1,"children":[]},{"name":"Smoke Test Command","total_count":1,"children":[]},{"name":"Standard Run Command","total_count":1,"children":[]}]},{"name":"helpers.mjs","total_count":3,"children":[{"name":"DANGEROUS_PATTERNS","total_count":1,"children":[]},{"name":"getConfirmationMessage()","total_count":1,"children":[]},{"name":"shouldConfirmBashCommand()","total_count":1,"children":[]}]},{"name":"helpers.mjs","total_count":14,"children":[{"name":"ALLOWED_ISOLATED_SKILLS","total_count":1,"children":[]},{"name":"buildSkillPrompt()","total_count":1,"children":[]},{"name":"buildSpecVerifierPrompt()","total_count":1,"children":[]},{"name":"buildTestVerifierPrompt()","total_count":1,"children":[]},{"name":"defaultRunGitDiff()","total_count":1,"children":[]},{"name":"filterSkillsByName()","total_count":1,"children":[]},{"name":"parseIsolatedSkillArgs()","total_count":1,"children":[]},{"name":"parseSpecVerifyArgs()","total_count":1,"children":[]},{"name":"parseTestVerifyArgs()","total_count":1,"children":[]},{"name":"readDiffSource()","total_count":1,"children":[]},{"name":"readRequiredArtifact()","total_count":1,"children":[]},{"name":"resolveTargetCwd()","total_count":1,"children":[]},{"name":"summarizeRun()","total_count":1,"children":[]},{"name":"validateIsolatedSkillName()","total_count":1,"children":[]}]},{"name":"index.ts","total_count":1,"children":[{"name":"bashConfirmationExtension()","total_count":1,"children":[]}]},{"name":"index.ts","total_count":5,"children":[{"name":"assertIdle()","total_count":1,"children":[]},{"name":"runIsolatedSkillSession()","total_count":1,"children":[]},{"name":"runReportedSkillSession()","total_count":1,"children":[]},{"name":"RunSkillOptions","total_count":1,"children":[]},{"name":"subagentsExtension()","total_count":1,"children":[]}]},{"name":"llama_cpp_provider.py","total_count":8,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":"._cleanup_process()","total_count":1,"children":[]},{"name":".complete()","total_count":1,"children":[]},{"name":"CompletionResult","total_count":1,"children":[]},{"name":"LlamaCppProvider","total_count":1,"children":[]},{"name":"Popen","total_count":1,"children":[]},{"name":"Provider that calls a local llama-cli binary via subprocess.","total_count":1,"children":[]},{"name":"Terminate a timed-out process and escalate to kill if needed.","total_count":1,"children":[]}]},{"name":"LLM_SERVICE_TUNING.md","total_count":11,"children":[{"name":"Better reliability","total_count":1,"children":[]},{"name":"Configuration surfaces","total_count":1,"children":[]},{"name":"Container deployment notes","total_count":1,"children":[]},{"name":"Higher throughput","total_count":1,"children":[]},{"name":"Inference Server Tuning Notes","total_count":1,"children":[]},{"name":"LLM_SERVICE_TUNING.md","total_count":1,"children":[]},{"name":"Lower latency","total_count":1,"children":[]},{"name":"Managed runtime settings","total_count":1,"children":[]},{"name":"Request defaults","total_count":1,"children":[]},{"name":"Tuning goals","total_count":1,"children":[]},{"name":"Validation checklist","total_count":1,"children":[]}]},{"name":"local-inference-traces.md","total_count":32,"children":[{"name":"`GET /debug/traces/<request_id>`","total_count":1,"children":[]},{"name":"`GET /debug/traces/ui/<request_id>`","total_count":1,"children":[]},{"name":"`GET /debug/traces/ui`","total_count":1,"children":[]},{"name":"`GET /debug/traces`","total_count":1,"children":[]},{"name":"Acceptance Criteria","total_count":1,"children":[]},{"name":"Capture modes","total_count":1,"children":[]},{"name":"Configuration","total_count":1,"children":[]},{"name":"Current Behavior","total_count":1,"children":[]},{"name":"Data Model","total_count":1,"children":[]},{"name":"Edge Cases","total_count":1,"children":[]},{"name":"Implementation Commits","total_count":1,"children":[]},{"name":"Interfaces","total_count":1,"children":[]},{"name":"Local Inference Traces","total_count":1,"children":[]},{"name":"local-inference-traces.md","total_count":1,"children":[]},{"name":"Metadata section","total_count":1,"children":[]},{"name":"Module Ownership","total_count":1,"children":[]},{"name":"Out of Scope","total_count":1,"children":[]},{"name":"Primary store","total_count":1,"children":[]},{"name":"Public API contract separation","total_count":1,"children":[]},{"name":"Purpose","total_count":1,"children":[]},{"name":"Read endpoints","total_count":1,"children":[]},{"name":"Request section","total_count":1,"children":[]},{"name":"Response section","total_count":1,"children":[]},{"name":"Rules and Invariants","total_count":1,"children":[]},{"name":"Scope","total_count":1,"children":[]},{"name":"Spec Commits","total_count":1,"children":[]},{"name":"Status","total_count":1,"children":[]},{"name":"Test Plan","total_count":1,"children":[]},{"name":"Traceability","total_count":1,"children":[]},{"name":"UI view model","total_count":1,"children":[]},{"name":"Visual UI configuration","total_count":1,"children":[]},{"name":"Write-path trace record shape","total_count":1,"children":[]}]},{"name":"local_server_runtime.py","total_count":13,"children":[{"name":"_build_server_command()","total_count":1,"children":[]},{"name":"_build_subprocess_env()","total_count":1,"children":[]},{"name":"_forward_child_stream()","total_count":1,"children":[]},{"name":"_healthcheck_urls()","total_count":1,"children":[]},{"name":"_resolve_mmproj_path()","total_count":1,"children":[]},{"name":"_sanitize_child_log_line()","total_count":1,"children":[]},{"name":"_server_is_ready()","total_count":1,"children":[]},{"name":"_start_child_log_forwarders()","total_count":1,"children":[]},{"name":"_wait_for_server()","total_count":1,"children":[]},{"name":"ensure_managed_server()","total_count":1,"children":[]},{"name":"Managed local llama.cpp server lifecycle for low-latency HTTP inference.","total_count":1,"children":[]},{"name":"Popen","total_count":1,"children":[]},{"name":"reset_managed_servers()","total_count":1,"children":[]}]},{"name":"monitoring.md","total_count":36,"children":[{"name":"`GET /metrics`","total_count":1,"children":[]},{"name":"`llm_service_in_flight_requests`","total_count":1,"children":[]},{"name":"`llm_service_managed_server_restarts_total`","total_count":1,"children":[]},{"name":"`llm_service_managed_server_startup_duration_seconds`","total_count":1,"children":[]},{"name":"`llm_service_managed_server_startups_total`","total_count":1,"children":[]},{"name":"`llm_service_provider_duration_seconds`","total_count":1,"children":[]},{"name":"`llm_service_readiness_checks_total`","total_count":1,"children":[]},{"name":"`llm_service_readiness_duration_seconds`","total_count":1,"children":[]},{"name":"`llm_service_request_duration_seconds`","total_count":1,"children":[]},{"name":"`llm_service_requests_total`","total_count":1,"children":[]},{"name":"Acceptance Criteria","total_count":1,"children":[]},{"name":"Current Behavior","total_count":1,"children":[]},{"name":"Data Model","total_count":1,"children":[]},{"name":"Dependency interface","total_count":1,"children":[]},{"name":"Edge Cases","total_count":1,"children":[]},{"name":"HTTP endpoints","total_count":1,"children":[]},{"name":"Implementation Commits","total_count":1,"children":[]},{"name":"Interfaces","total_count":1,"children":[]},{"name":"Label schema","total_count":1,"children":[]},{"name":"Managed runtime labels","total_count":1,"children":[]},{"name":"Metric names","total_count":1,"children":[]},{"name":"Metric semantics","total_count":1,"children":[]},{"name":"Module Ownership","total_count":1,"children":[]},{"name":"Monitoring and Observability","total_count":1,"children":[]},{"name":"monitoring.md","total_count":1,"children":[]},{"name":"Out of Scope","total_count":1,"children":[]},{"name":"Outcome values","total_count":1,"children":[]},{"name":"Purpose","total_count":1,"children":[]},{"name":"Readiness labels","total_count":1,"children":[]},{"name":"Rules and Invariants","total_count":1,"children":[]},{"name":"Scope","total_count":1,"children":[]},{"name":"Service route labels","total_count":1,"children":[]},{"name":"Spec Commits","total_count":1,"children":[]},{"name":"Status","total_count":1,"children":[]},{"name":"Test Plan","total_count":1,"children":[]},{"name":"Traceability","total_count":1,"children":[]}]},{"name":"monitoring.py","total_count":24,"children":[{"name":"_normalize_label()","total_count":1,"children":[]},{"name":"_normalize_outcome()","total_count":1,"children":[]},{"name":"classify_exception()","total_count":1,"children":[]},{"name":"classify_readiness_exception()","total_count":1,"children":[]},{"name":"clear_request_context()","total_count":1,"children":[]},{"name":"current_request_labels()","total_count":1,"children":[]},{"name":"current_request_metric_labels()","total_count":1,"children":[]},{"name":"Exception","total_count":1,"children":[]},{"name":"increment_managed_server_restart()","total_count":1,"children":[]},{"name":"metrics_response()","total_count":1,"children":[]},{"name":"observe_current_chat_provider_duration()","total_count":1,"children":[]},{"name":"observe_managed_server_startup()","total_count":1,"children":[]},{"name":"observe_prompt_capture()","total_count":1,"children":[]},{"name":"observe_provider_duration()","total_count":1,"children":[]},{"name":"observe_readiness()","total_count":1,"children":[]},{"name":"observe_request()","total_count":1,"children":[]},{"name":"Prometheus metrics for the generic inference server.","total_count":1,"children":[]},{"name":"provider_identity()","total_count":1,"children":[]},{"name":"request_context()","total_count":1,"children":[]},{"name":"reset_metrics()","total_count":1,"children":[]},{"name":"set_resolved_model()","total_count":1,"children":[]},{"name":"set_resolved_provider()","total_count":1,"children":[]},{"name":"timer()","total_count":1,"children":[]},{"name":"track_in_flight()","total_count":1,"children":[]}]},{"name":"MONITORING_IMPLEMENTATION_PLAN.md","total_count":20,"children":[{"name":"1. Request metrics","total_count":1,"children":[]},{"name":"2. Managed runtime telemetry","total_count":1,"children":[]},{"name":"3. Stage timing / request tracing","total_count":1,"children":[]},{"name":"4. Structured request logging","total_count":1,"children":[]},{"name":"5. Prompt logging policy and privacy controls","total_count":1,"children":[]},{"name":"6. Debug/diagnostic surfaces","total_count":1,"children":[]},{"name":"Goal","total_count":1,"children":[]},{"name":"Guiding Principle","total_count":1,"children":[]},{"name":"Monitoring Implementation Plan","total_count":1,"children":[]},{"name":"MONITORING_IMPLEMENTATION_PLAN.md","total_count":1,"children":[]},{"name":"Observability Areas","total_count":1,"children":[]},{"name":"Open Questions For Later Specs","total_count":1,"children":[]},{"name":"Phase 1","total_count":1,"children":[]},{"name":"Phase 2","total_count":1,"children":[]},{"name":"Phase 3","total_count":1,"children":[]},{"name":"Phase 4","total_count":1,"children":[]},{"name":"Phase 5","total_count":1,"children":[]},{"name":"Recommended Implementation Order","total_count":1,"children":[]},{"name":"Recommended Next Feature After Loose Ends Are Resolved","total_count":1,"children":[]},{"name":"Why This Order","total_count":1,"children":[]}]},{"name":"openai-compatible-api.md","total_count":23,"children":[{"name":"`GET /health`","total_count":1,"children":[]},{"name":"`GET /openapi.json`","total_count":1,"children":[]},{"name":"`GET /ready`","total_count":1,"children":[]},{"name":"`GET /v1/models`","total_count":1,"children":[]},{"name":"`POST /v1/chat/completions`","total_count":1,"children":[]},{"name":"Acceptance Criteria","total_count":1,"children":[]},{"name":"Current Behavior","total_count":1,"children":[]},{"name":"Data Model","total_count":1,"children":[]},{"name":"Edge Cases","total_count":1,"children":[]},{"name":"Implementation Commits","total_count":1,"children":[]},{"name":"Interfaces","total_count":1,"children":[]},{"name":"Module Ownership","total_count":1,"children":[]},{"name":"OpenAI-Compatible API","total_count":1,"children":[]},{"name":"openai-compatible-api.md","total_count":1,"children":[]},{"name":"Out of Scope","total_count":1,"children":[]},{"name":"Purpose","total_count":1,"children":[]},{"name":"Rules and Invariants","total_count":1,"children":[]},{"name":"Scope","total_count":1,"children":[]},{"name":"Spec Commits","total_count":1,"children":[]},{"name":"Standard error shape","total_count":1,"children":[]},{"name":"Status","total_count":1,"children":[]},{"name":"Test Plan","total_count":1,"children":[]},{"name":"Traceability","total_count":1,"children":[]}]},{"name":"openai-compatible-provider.md","total_count":35,"children":[{"name":"Acceptance Criteria","total_count":1,"children":[]},{"name":"Accepted Test Audit Report","total_count":1,"children":[]},{"name":"Bundled example provider set","total_count":1,"children":[]},{"name":"Code Quality Issues","total_count":1,"children":[]},{"name":"Commented reasoning example lines","total_count":1,"children":[]},{"name":"Current Behavior","total_count":1,"children":[]},{"name":"Data Model","total_count":1,"children":[]},{"name":"Edge Cases","total_count":1,"children":[]},{"name":"Implementation Commits","total_count":1,"children":[]},{"name":"Inbound request schema","total_count":1,"children":[]},{"name":"Interfaces","total_count":1,"children":[]},{"name":"Latest Spec Audit Report","total_count":1,"children":[]},{"name":"Managed server fields used by bundled providers","total_count":1,"children":[]},{"name":"Module Ownership","total_count":1,"children":[]},{"name":"OpenAI-Compatible Provider","total_count":1,"children":[]},{"name":"openai-compatible-provider.md","total_count":1,"children":[]},{"name":"Out of Scope","total_count":1,"children":[]},{"name":"Outbound payload","total_count":1,"children":[]},{"name":"Provider configuration","total_count":1,"children":[]},{"name":"Purpose","total_count":1,"children":[]},{"name":"Red-Phase Validity","total_count":1,"children":[]},{"name":"Requirement Coverage Matrix","total_count":1,"children":[]},{"name":"Rules and Invariants","total_count":1,"children":[]},{"name":"Scope","total_count":1,"children":[]},{"name":"Spec Audit Report","total_count":1,"children":[]},{"name":"Spec Commits","total_count":1,"children":[]},{"name":"Spec Compliance","total_count":1,"children":[]},{"name":"Status","total_count":1,"children":[]},{"name":"Summary Verdict","total_count":1,"children":[]},{"name":"Summary Verdict","total_count":1,"children":[]},{"name":"Test Audit Report","total_count":1,"children":[]},{"name":"Test Plan","total_count":1,"children":[]},{"name":"Test Quality Issues","total_count":1,"children":[]},{"name":"Test-Spec Alignment","total_count":1,"children":[]},{"name":"Traceability","total_count":1,"children":[]}]},{"name":"openai_compatible_provider.py","total_count":8,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".complete()","total_count":1,"children":[]},{"name":".resolved_mmproj_path()","total_count":1,"children":[]},{"name":".supported_input_modalities()","total_count":1,"children":[]},{"name":".warmup()","total_count":1,"children":[]},{"name":"CompletionResult","total_count":1,"children":[]},{"name":"OpenAICompatibleProvider","total_count":1,"children":[]},{"name":"Provider that calls any OpenAI-compatible REST API (OpenAI, Ollama, llama.cpp se","total_count":1,"children":[]}]},{"name":"operational-logging.md","total_count":34,"children":[{"name":"Acceptance Criteria","total_count":1,"children":[]},{"name":"Accepted Test Audit Report","total_count":1,"children":[]},{"name":"Child-process log forwarding","total_count":1,"children":[]},{"name":"Code Quality Issues","total_count":1,"children":[]},{"name":"Current Behavior","total_count":1,"children":[]},{"name":"Data Model","total_count":1,"children":[]},{"name":"Edge Cases","total_count":1,"children":[]},{"name":"Implementation Commits","total_count":1,"children":[]},{"name":"Interfaces","total_count":1,"children":[]},{"name":"Latest Spec Audit Report","total_count":1,"children":[]},{"name":"Managed-runtime lifecycle logging","total_count":1,"children":[]},{"name":"Module Ownership","total_count":1,"children":[]},{"name":"Operational Logging","total_count":1,"children":[]},{"name":"operational-logging.md","total_count":1,"children":[]},{"name":"Out of Scope","total_count":1,"children":[]},{"name":"Purpose","total_count":1,"children":[]},{"name":"Red-Phase Validity","total_count":1,"children":[]},{"name":"Requirement Coverage Matrix","total_count":1,"children":[]},{"name":"Rules and Invariants","total_count":1,"children":[]},{"name":"Sanitization rules","total_count":1,"children":[]},{"name":"Scope","total_count":1,"children":[]},{"name":"Service access logging","total_count":1,"children":[]},{"name":"Service failure-summary logging","total_count":1,"children":[]},{"name":"Spec Audit Report","total_count":1,"children":[]},{"name":"Spec Commits","total_count":1,"children":[]},{"name":"Spec Compliance","total_count":1,"children":[]},{"name":"Status","total_count":1,"children":[]},{"name":"Summary Verdict","total_count":1,"children":[]},{"name":"Summary Verdict","total_count":1,"children":[]},{"name":"Test Audit Report","total_count":1,"children":[]},{"name":"Test Plan","total_count":1,"children":[]},{"name":"Test Quality Issues","total_count":1,"children":[]},{"name":"Test-Spec Alignment","total_count":1,"children":[]},{"name":"Traceability","total_count":1,"children":[]}]},{"name":"prompt-capture.md","total_count":26,"children":[{"name":"Acceptance Criteria","total_count":1,"children":[]},{"name":"Capture modes","total_count":1,"children":[]},{"name":"Capture record shape","total_count":1,"children":[]},{"name":"Configuration","total_count":1,"children":[]},{"name":"Current Behavior","total_count":1,"children":[]},{"name":"Data Model","total_count":1,"children":[]},{"name":"Downstream planning note","total_count":1,"children":[]},{"name":"Edge Cases","total_count":1,"children":[]},{"name":"Implementation Commits","total_count":1,"children":[]},{"name":"Interfaces","total_count":1,"children":[]},{"name":"Module Ownership","total_count":1,"children":[]},{"name":"Multimodal normalization","total_count":1,"children":[]},{"name":"Out of Scope","total_count":1,"children":[]},{"name":"Prompt Capture","total_count":1,"children":[]},{"name":"prompt-capture.md","total_count":1,"children":[]},{"name":"Purpose","total_count":1,"children":[]},{"name":"Redaction levels","total_count":1,"children":[]},{"name":"Request id semantics","total_count":1,"children":[]},{"name":"Request section","total_count":1,"children":[]},{"name":"Response section","total_count":1,"children":[]},{"name":"Rules and Invariants","total_count":1,"children":[]},{"name":"Scope","total_count":1,"children":[]},{"name":"Spec Commits","total_count":1,"children":[]},{"name":"Status","total_count":1,"children":[]},{"name":"Test Plan","total_count":1,"children":[]},{"name":"Traceability","total_count":1,"children":[]}]},{"name":"prompt_capture.py","total_count":26,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".__post_init__()","total_count":1,"children":[]},{"name":"._run_worker()","total_count":1,"children":[]},{"name":".capture_chat_completion()","total_count":1,"children":[]},{"name":".flush()","total_count":1,"children":[]},{"name":".new_request_id()","total_count":1,"children":[]},{"name":".shutdown()","total_count":1,"children":[]},{"name":".write()","total_count":1,"children":[]},{"name":"_build_capture_record()","total_count":1,"children":[]},{"name":"_decode_base64_payload()","total_count":1,"children":[]},{"name":"_detect_input_modalities()","total_count":1,"children":[]},{"name":"_env_flag()","total_count":1,"children":[]},{"name":"_inline_payload_metadata()","total_count":1,"children":[]},{"name":"_is_inline_data_url()","total_count":1,"children":[]},{"name":"_media_metadata_from_url()","total_count":1,"children":[]},{"name":"_normalize_content_part()","total_count":1,"children":[]},{"name":"_normalize_message_content()","total_count":1,"children":[]},{"name":"_normalize_request()","total_count":1,"children":[]},{"name":"_normalize_response()","total_count":1,"children":[]},{"name":"_NullCaptureSink","total_count":1,"children":[]},{"name":"_redact_text()","total_count":1,"children":[]},{"name":"Any","total_count":1,"children":[]},{"name":"build_capture_manager_from_env()","total_count":1,"children":[]},{"name":"Prompt and multimodal asset capture for inference requests.","total_count":1,"children":[]},{"name":"PromptCaptureConfig","total_count":1,"children":[]},{"name":"PromptCaptureManager","total_count":1,"children":[]}]},{"name":"provider_base.py","total_count":13,"children":[{"name":".complete()","total_count":1,"children":[]},{"name":".supported_input_modalities()","total_count":1,"children":[]},{"name":".warmup()","total_count":1,"children":[]},{"name":"Abstract base for all LLM providers.","total_count":1,"children":[]},{"name":"BaseProvider","total_count":1,"children":[]},{"name":"CompletionResult","total_count":1,"children":[]},{"name":"Prepare the runtime for future completions.","total_count":1,"children":[]},{"name":"ProviderTimeoutError","total_count":1,"children":[]},{"name":"ProviderUnavailableError","total_count":1,"children":[]},{"name":"Raised when the provider binary or endpoint cannot be reached.","total_count":1,"children":[]},{"name":"Raised when the provider exceeds the configured timeout.","total_count":1,"children":[]},{"name":"Return the active input modalities supported by this provider.","total_count":1,"children":[]},{"name":"Run inference and return a CompletionResult.","total_count":1,"children":[]}]},{"name":"README.md","total_count":25,"children":[{"name":"`capture_sinks.py`","total_count":1,"children":[]},{"name":"`llama_cpp_provider.py`","total_count":1,"children":[]},{"name":"`local_server_runtime.py`","total_count":1,"children":[]},{"name":"`openai_compatible_provider.py`","total_count":1,"children":[]},{"name":"`prompt_capture.py`","total_count":1,"children":[]},{"name":"`provider_base.py`","total_count":1,"children":[]},{"name":"`router.py`","total_count":1,"children":[]},{"name":"`service_app.py`","total_count":1,"children":[]},{"name":"API","total_count":1,"children":[]},{"name":"Chat completions","total_count":1,"children":[]},{"name":"Configuration","total_count":1,"children":[]},{"name":"Containers","total_count":1,"children":[]},{"name":"Core modules","total_count":1,"children":[]},{"name":"Development workflow","total_count":1,"children":[]},{"name":"Generic Inference Server","total_count":1,"children":[]},{"name":"Health","total_count":1,"children":[]},{"name":"Local run","total_count":1,"children":[]},{"name":"Metrics","total_count":1,"children":[]},{"name":"Models","total_count":1,"children":[]},{"name":"Notes","total_count":1,"children":[]},{"name":"OpenAPI contract","total_count":1,"children":[]},{"name":"Optional prompt capture","total_count":1,"children":[]},{"name":"Readiness","total_count":1,"children":[]},{"name":"README.md","total_count":1,"children":[]},{"name":"Repository layout","total_count":1,"children":[]}]},{"name":"router.py","total_count":12,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":"._build_provider()","total_count":1,"children":[]},{"name":"._resolve_provider_ids()","total_count":1,"children":[]},{"name":".ensure_runtime_ready()","total_count":1,"children":[]},{"name":".get_provider()","total_count":1,"children":[]},{"name":".provider_ids()","total_count":1,"children":[]},{"name":".route()","total_count":1,"children":[]},{"name":".routing()","total_count":1,"children":[]},{"name":"BaseProvider","total_count":1,"children":[]},{"name":"CompletionResult","total_count":1,"children":[]},{"name":"Loads provider configuration and routes inference calls by logical role.","total_count":1,"children":[]},{"name":"ProviderRouter","total_count":1,"children":[]}]},{"name":"service_app.py","total_count":17,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".complete_chat()","total_count":1,"children":[]},{"name":".readiness()","total_count":1,"children":[]},{"name":"_error_body()","total_count":1,"children":[]},{"name":"_error_response()","total_count":1,"children":[]},{"name":"_log_service_access()","total_count":1,"children":[]},{"name":"_log_service_failure()","total_count":1,"children":[]},{"name":"_openapi_schema()","total_count":1,"children":[]},{"name":"_validate_chat_messages()","total_count":1,"children":[]},{"name":"_validate_content_parts()","total_count":1,"children":[]},{"name":"build_runtime()","total_count":1,"children":[]},{"name":"create_app()","total_count":1,"children":[]},{"name":"Dedicated HTTP service for shared LLM inference.","total_count":1,"children":[]},{"name":"Flask","total_count":1,"children":[]},{"name":"LLMServiceRuntime","total_count":1,"children":[]},{"name":"PromptCaptureManager","total_count":1,"children":[]},{"name":"ProviderRouter","total_count":1,"children":[]}]},{"name":"subagents.md","total_count":29,"children":[{"name":"`/isolated-skill <skill-name> [path]`","total_count":1,"children":[]},{"name":"`/module-boundary [path]`","total_count":1,"children":[]},{"name":"`/spec-verify <spec-path> <diff-source>`","total_count":1,"children":[]},{"name":"`/test-verify <spec-path> <test-path> <red-output-path>`","total_count":1,"children":[]},{"name":"Acceptance Criteria","total_count":1,"children":[]},{"name":"Allowlisted isolated skills","total_count":1,"children":[]},{"name":"Child session constraints","total_count":1,"children":[]},{"name":"Current Behavior","total_count":1,"children":[]},{"name":"Data Model","total_count":1,"children":[]},{"name":"Edge Cases","total_count":1,"children":[]},{"name":"Generic isolated run summary","total_count":1,"children":[]},{"name":"Implementation Commits","total_count":1,"children":[]},{"name":"Interfaces","total_count":1,"children":[]},{"name":"Isolated Subagent Verification Commands","total_count":1,"children":[]},{"name":"Module Ownership","total_count":1,"children":[]},{"name":"Out of Scope","total_count":1,"children":[]},{"name":"Parent-side validations","total_count":1,"children":[]},{"name":"Purpose","total_count":1,"children":[]},{"name":"Rules and Invariants","total_count":1,"children":[]},{"name":"Scope","total_count":1,"children":[]},{"name":"Slash commands","total_count":1,"children":[]},{"name":"Spec Commits","total_count":1,"children":[]},{"name":"Spec verifier payload","total_count":1,"children":[]},{"name":"Status","total_count":1,"children":[]},{"name":"subagents.md","total_count":1,"children":[]},{"name":"Test Plan","total_count":1,"children":[]},{"name":"Test verifier payload","total_count":1,"children":[]},{"name":"Traceability","total_count":1,"children":[]},{"name":"Verifier handoff payloads","total_count":1,"children":[]}]},{"name":"TEMPLATE.md","total_count":17,"children":[{"name":"<Capability Name>","total_count":1,"children":[]},{"name":"Acceptance Criteria","total_count":1,"children":[]},{"name":"Current Behavior","total_count":1,"children":[]},{"name":"Data Model","total_count":1,"children":[]},{"name":"Edge Cases","total_count":1,"children":[]},{"name":"Implementation Commits","total_count":1,"children":[]},{"name":"Interfaces","total_count":1,"children":[]},{"name":"Module Ownership","total_count":1,"children":[]},{"name":"Out of Scope","total_count":1,"children":[]},{"name":"Purpose","total_count":1,"children":[]},{"name":"Rules and Invariants","total_count":1,"children":[]},{"name":"Scope","total_count":1,"children":[]},{"name":"Spec Commits","total_count":1,"children":[]},{"name":"Status","total_count":1,"children":[]},{"name":"TEMPLATE.md","total_count":1,"children":[]},{"name":"Test Plan","total_count":1,"children":[]},{"name":"Traceability","total_count":1,"children":[]}]},{"name":"test_feature_development_workflow.py","total_count":5,"children":[{"name":".test_feature_development_skill_enforces_multi_feature_planning()","total_count":1,"children":[]},{"name":".test_readme_points_feature_work_to_the_feature_development_skill()","total_count":1,"children":[]},{"name":".test_workflow_docs_define_multi_requirement_decomposition_and_dependency_planning()","total_count":1,"children":[]},{"name":".test_workflow_docs_require_feature_development_skill_for_all_feature_work()","total_count":1,"children":[]},{"name":"FeatureDevelopmentWorkflowDocsTests","total_count":1,"children":[]}]},{"name":"test_generic_inference_server.py","total_count":18,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".complete()","total_count":1,"children":[]},{"name":".get_provider()","total_count":1,"children":[]},{"name":".provider_ids()","total_count":1,"children":[]},{"name":".test_build_runtime_prefers_generic_env_var_names()","total_count":1,"children":[]},{"name":".test_commented_reasoning_lines_do_not_become_active_runtime_arguments()","total_count":1,"children":[]},{"name":".test_container_healthchecks_use_liveness_endpoint()","total_count":1,"children":[]},{"name":".test_docker_compose_uses_generic_environment_names()","total_count":1,"children":[]},{"name":".test_dockerfile_matches_standalone_repo_layout()","total_count":1,"children":[]},{"name":".test_legacy_application_files_are_removed()","total_count":1,"children":[]},{"name":".test_service_exposes_openai_compatible_models_endpoint()","total_count":1,"children":[]},{"name":".test_service_exposes_openapi_contract_for_external_clients()","total_count":1,"children":[]},{"name":".test_service_models_comments_out_disabled_provider_examples_and_reasoning_arguments()","total_count":1,"children":[]},{"name":".test_service_models_declare_only_q4_e4b_bundled_provider()","total_count":1,"children":[]},{"name":".warmup()","total_count":1,"children":[]},{"name":"GenericInferenceServerTests","total_count":1,"children":[]},{"name":"StubProvider","total_count":1,"children":[]},{"name":"StubRouter","total_count":1,"children":[]}]},{"name":"test_monitoring.py","total_count":37,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".__init__()","total_count":1,"children":[]},{"name":"._assert_metric_value()","total_count":1,"children":[]},{"name":"._create_app()","total_count":1,"children":[]},{"name":"._metrics_text()","total_count":1,"children":[]},{"name":".complete()","total_count":1,"children":[]},{"name":".complete_chat()","total_count":1,"children":[]},{"name":".complete_chat()","total_count":1,"children":[]},{"name":".get_provider()","total_count":1,"children":[]},{"name":".provider_ids()","total_count":1,"children":[]},{"name":".readiness()","total_count":1,"children":[]},{"name":".readiness()","total_count":1,"children":[]},{"name":".setUp()","total_count":1,"children":[]},{"name":".test_already_healthy_managed_server_emits_no_startup_attempt_metric()","total_count":1,"children":[]},{"name":".test_chat_in_flight_gauge_rises_during_active_request_and_returns_to_zero()","total_count":1,"children":[]},{"name":".test_health_route_emits_request_counter_and_duration_metrics()","total_count":1,"children":[]},{"name":".test_invalid_chat_request_emits_client_error_metrics_with_bounded_labels()","total_count":1,"children":[]},{"name":".test_malformed_messages_record_client_error_metric()","total_count":1,"children":[]},{"name":".test_managed_server_failed_startup_after_spawn_records_unavailable_metrics()","total_count":1,"children":[]},{"name":".test_managed_server_replacement_launch_increments_restart_counter()","total_count":1,"children":[]},{"name":".test_managed_server_successful_startup_records_startup_metrics()","total_count":1,"children":[]},{"name":".test_metrics_endpoint_returns_all_metric_families_and_is_not_self_counted()","total_count":1,"children":[]},{"name":".test_provider_resolution_failure_preserves_requested_model_and_unresolved_provider_label()","total_count":1,"children":[]},{"name":".test_provider_timeout_records_timeout_outcome_in_route_and_provider_metrics()","total_count":1,"children":[]},{"name":".test_provider_unavailable_records_unavailable_outcome_and_provider_duration()","total_count":1,"children":[]},{"name":".test_ready_cached_success_still_emits_per_provider_readiness_metrics()","total_count":1,"children":[]},{"name":".test_ready_emits_route_duration_and_per_provider_readiness_metrics()","total_count":1,"children":[]},{"name":".test_ready_provider_value_error_maps_to_unavailable_metrics()","total_count":1,"children":[]},{"name":".test_reset_metrics_clears_previous_observations()","total_count":1,"children":[]},{"name":".test_successful_chat_records_requested_model_and_resolved_provider_metrics()","total_count":1,"children":[]},{"name":".test_unhandled_chat_exception_records_server_error_metric()","total_count":1,"children":[]},{"name":".warmup()","total_count":1,"children":[]},{"name":"DummyRuntime","total_count":1,"children":[]},{"name":"ExplodingRuntime","total_count":1,"children":[]},{"name":"MonitoringSpecTests","total_count":1,"children":[]},{"name":"StubProvider","total_count":1,"children":[]},{"name":"StubRouter","total_count":1,"children":[]}]},{"name":"test_multimodal_chat.py","total_count":34,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".__init__()","total_count":1,"children":[]},{"name":"._create_app()","total_count":1,"children":[]},{"name":".complete()","total_count":1,"children":[]},{"name":".get_provider()","total_count":1,"children":[]},{"name":".provider_ids()","total_count":1,"children":[]},{"name":".supported_input_modalities()","total_count":1,"children":[]},{"name":".test_actual_llama_cpp_provider_rejects_structured_multimodal_requests_at_service_boundary()","total_count":1,"children":[]},{"name":".test_audio_requests_fail_fast_when_provider_lacks_active_audio_support()","total_count":1,"children":[]},{"name":".test_complete_chat_preserves_audio_messages_for_openai_provider_with_active_audio_support()","total_count":1,"children":[]},{"name":".test_complete_chat_preserves_structured_messages_for_openai_provider()","total_count":1,"children":[]},{"name":".test_content_must_be_string_or_list()","total_count":1,"children":[]},{"name":".test_content_parts_must_be_objects()","total_count":1,"children":[]},{"name":".test_empty_messages_are_rejected()","total_count":1,"children":[]},{"name":".test_image_requests_fail_fast_when_provider_lacks_active_image_support()","total_count":1,"children":[]},{"name":".test_input_audio_parts_require_audio_fields()","total_count":1,"children":[]},{"name":".test_invalid_image_url_part_is_rejected()","total_count":1,"children":[]},{"name":".test_managed_openai_provider_with_image_capability_but_no_mmproj_rejects_image_requests()","total_count":1,"children":[]},{"name":".test_missing_content_is_rejected()","total_count":1,"children":[]},{"name":".test_missing_messages_are_rejected()","total_count":1,"children":[]},{"name":".test_missing_model_is_rejected()","total_count":1,"children":[]},{"name":".test_missing_role_is_rejected()","total_count":1,"children":[]},{"name":".test_non_object_message_items_are_rejected()","total_count":1,"children":[]},{"name":".test_string_content_requests_continue_to_work()","total_count":1,"children":[]},{"name":".test_structured_multimodal_requests_are_rejected_for_non_openai_providers()","total_count":1,"children":[]},{"name":".test_text_content_parts_require_text_field()","total_count":1,"children":[]},{"name":".test_text_part_arrays_do_not_require_mmproj()","total_count":1,"children":[]},{"name":".test_timeout_seconds_is_passed_through_at_service_boundary()","total_count":1,"children":[]},{"name":".test_unknown_structured_content_type_is_rejected()","total_count":1,"children":[]},{"name":".warmup()","total_count":1,"children":[]},{"name":"MultimodalChatTests","total_count":1,"children":[]},{"name":"RecordingNonOpenAIProvider","total_count":1,"children":[]},{"name":"RecordingOpenAIProvider","total_count":1,"children":[]},{"name":"StubRouter","total_count":1,"children":[]}]},{"name":"test_openai_compatible_provider.py","total_count":21,"children":[{"name":".test_build_server_command_adds_mmproj_only_when_resolved_and_never_uses_network_download_flags()","total_count":1,"children":[]},{"name":".test_bundled_openai_example_providers_do_not_define_temperature_or_max_tokens_defaults()","total_count":1,"children":[]},{"name":".test_complete_allows_request_params_to_override_configured_values()","total_count":1,"children":[]},{"name":".test_complete_forwards_structured_messages_without_rebuilding_them()","total_count":1,"children":[]},{"name":".test_complete_forwards_valid_audio_messages_when_audio_support_is_active()","total_count":1,"children":[]},{"name":".test_complete_includes_temperature_and_max_tokens_when_configured()","total_count":1,"children":[]},{"name":".test_complete_omits_temperature_and_max_tokens_when_unspecified()","total_count":1,"children":[]},{"name":".test_complete_uses_local_timeout_fallback_when_unspecified()","total_count":1,"children":[]},{"name":".test_complete_uses_reasoning_content_when_message_content_is_empty()","total_count":1,"children":[]},{"name":".test_connection_error_resets_managed_runtime_ready_and_surfaces_unavailable()","total_count":1,"children":[]},{"name":".test_direct_llama_cpp_provider_remains_text_only()","total_count":1,"children":[]},{"name":".test_invalid_input_modalities_are_rejected()","total_count":1,"children":[]},{"name":".test_mmproj_resolution_prefers_environment_and_falls_back_to_configured_path()","total_count":1,"children":[]},{"name":".test_provider_configured_timeout_is_used_when_caller_omits_it()","total_count":1,"children":[]},{"name":".test_repository_does_not_attempt_multimodal_auto_downloads_when_resolving_projector_support()","total_count":1,"children":[]},{"name":".test_request_timeout_overrides_provider_configured_timeout()","total_count":1,"children":[]},{"name":".test_supported_input_modalities_default_to_text_only_when_unset()","total_count":1,"children":[]},{"name":".test_supported_input_modalities_require_resolved_mmproj_for_image_support()","total_count":1,"children":[]},{"name":".test_timeout_seconds_is_used_only_as_local_http_timeout()","total_count":1,"children":[]},{"name":".test_upstream_non_200_response_surfaces_provider_unavailable()","total_count":1,"children":[]},{"name":"OpenAICompatibleProviderSpecTests","total_count":1,"children":[]}]},{"name":"test_operational_logging.py","total_count":39,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".__iter__()","total_count":1,"children":[]},{"name":".__next__()","total_count":1,"children":[]},{"name":"._chat_payload()","total_count":1,"children":[]},{"name":".complete_chat()","total_count":1,"children":[]},{"name":".complete_chat()","total_count":1,"children":[]},{"name":".complete_chat()","total_count":1,"children":[]},{"name":".complete_chat()","total_count":1,"children":[]},{"name":".complete_chat()","total_count":1,"children":[]},{"name":".readiness()","total_count":1,"children":[]},{"name":".readiness()","total_count":1,"children":[]},{"name":".readiness()","total_count":1,"children":[]},{"name":".readiness()","total_count":1,"children":[]},{"name":".readiness()","total_count":1,"children":[]},{"name":".setUp()","total_count":1,"children":[]},{"name":".tearDown()","total_count":1,"children":[]},{"name":".test_container_runtime_defaults_enable_stdout_stderr_logging_without_external_shipping()","total_count":1,"children":[]},{"name":".test_ensure_managed_server_logs_failure_when_readiness_wait_fails()","total_count":1,"children":[]},{"name":".test_ensure_managed_server_logs_launch_ready_and_forwarded_safe_child_line()","total_count":1,"children":[]},{"name":".test_ensure_managed_server_logs_restart_before_relaunch()","total_count":1,"children":[]},{"name":".test_ensure_managed_server_returns_without_waiting_for_child_log_eof()","total_count":1,"children":[]},{"name":".test_ensure_managed_server_sets_ld_library_path_for_binary_directory()","total_count":1,"children":[]},{"name":".test_invalid_request_emits_access_and_client_error_summary_without_body_leakage()","total_count":1,"children":[]},{"name":".test_local_app_logging_works_without_docker_or_external_sink()","total_count":1,"children":[]},{"name":".test_reset_managed_servers_logs_termination()","total_count":1,"children":[]},{"name":".test_sanitize_child_log_line_allows_safe_lifecycle_text()","total_count":1,"children":[]},{"name":".test_sanitize_child_log_line_drops_sensitive_payloads()","total_count":1,"children":[]},{"name":".test_sensitive_child_lines_are_dropped_during_forwarding()","total_count":1,"children":[]},{"name":".test_successful_request_emits_access_log_without_prompt_content()","total_count":1,"children":[]},{"name":".test_timeout_emits_access_and_timeout_summary()","total_count":1,"children":[]},{"name":".test_unavailable_emits_access_and_unavailable_summary()","total_count":1,"children":[]},{"name":".test_unhandled_exception_emits_access_and_server_error_summary()","total_count":1,"children":[]},{"name":"BlockingStream","total_count":1,"children":[]},{"name":"InvalidRuntime","total_count":1,"children":[]},{"name":"OperationalLoggingTests","total_count":1,"children":[]},{"name":"SuccessRuntime","total_count":1,"children":[]},{"name":"TimeoutRuntime","total_count":1,"children":[]},{"name":"UnavailableRuntime","total_count":1,"children":[]},{"name":"UnhandledRuntime","total_count":1,"children":[]}]},{"name":"test_prompt_capture.py","total_count":24,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".__init__()","total_count":1,"children":[]},{"name":"._create_app()","total_count":1,"children":[]},{"name":"._payload()","total_count":1,"children":[]},{"name":"._read_records()","total_count":1,"children":[]},{"name":".complete()","total_count":1,"children":[]},{"name":".get_provider()","total_count":1,"children":[]},{"name":".provider_ids()","total_count":1,"children":[]},{"name":".setUp()","total_count":1,"children":[]},{"name":".supported_input_modalities()","total_count":1,"children":[]},{"name":".test_full_mode_can_include_system_prompts_when_enabled()","total_count":1,"children":[]},{"name":".test_full_mode_persists_messages_and_response_while_excluding_system_prompts_by_default()","total_count":1,"children":[]},{"name":".test_full_mode_replaces_inline_media_with_metadata_by_default()","total_count":1,"children":[]},{"name":".test_full_queue_drops_capture_without_failing_inference()","total_count":1,"children":[]},{"name":".test_metadata_mode_persists_sanitized_record_without_prompt_or_completion_text()","total_count":1,"children":[]},{"name":".test_prompt_capture_is_disabled_by_default()","total_count":1,"children":[]},{"name":".test_sink_failure_does_not_fail_inference_and_emits_failed_capture_metric()","total_count":1,"children":[]},{"name":".warmup()","total_count":1,"children":[]},{"name":".write()","total_count":1,"children":[]},{"name":"FailingSink","total_count":1,"children":[]},{"name":"Path","total_count":1,"children":[]},{"name":"PromptCaptureTests","total_count":1,"children":[]},{"name":"StubProvider","total_count":1,"children":[]},{"name":"StubRouter","total_count":1,"children":[]}]},{"name":"bash_confirmation.test.mjs","total_count":1,"children":[]},{"name":"subagents.test.mjs","total_count":1,"children":[]}]};
+
+    function transformData(jsonData) {
+        // Helper function to recursively build the children structure
+        function processNode(node, parentL1StageName) {
+            let displayName = node.name;
+            // Append total_count if it exists and is not already in the name
+            if (node.total_count !== undefined) {
+                if (!/\(Total Count: \d+\)$/.test(displayName)) {
+                    displayName += ` (Total Count: ${node.total_count})`;
+                }
+            }
+
+            const newNode = { name: displayName };
+
+            if (parentL1StageName === "Root") {
+                 newNode.originalStageName = node.name;
+            } else {
+                newNode.originalStageName = parentL1StageName;
+            }
+
+            if (node.children && node.children.length > 0) {
+                const stageNameToPass = (parentL1StageName === "Root") ? node.name : parentL1StageName;
+                newNode.children = node.children.map(child => processNode(child, stageNameToPass));
+            }
+
+            return newNode;
+        }
+
+        let rootDisplayName = jsonData.name;
+        if (jsonData.total_count !== undefined && !/\(Total Count: \d+\)$/.test(rootDisplayName)) {
+            rootDisplayName += ` (Total Count: ${jsonData.total_count})`;
+        }
+
+        return {
+            name: rootDisplayName,
+            originalStageName: "Root",
+            children: (jsonData.children || []).map(child => processNode(child, "Root"))
+        };
+    }
+
+    const treeData = transformData(initialJsonData);
+
+    // Auto-populated phaseColors: every depth-1 child of the root gets
+    // a stable colour from a bigger palette so all top-level dirs are
+    // distinguishable.
+    const PALETTE = [
+      ["#3498DB","#2980B9","#AED6F1"], ["#2ECC71","#27AE60","#A9DFBF"],
+      ["#E74C3C","#C0392B","#F5B7B1"], ["#9B59B6","#8E44AD","#D7BDE2"],
+      ["#F39C12","#D68910","#FAD7A0"], ["#1ABC9C","#117864","#A2D9CE"],
+      ["#34495E","#1B2631","#ABB2B9"], ["#E67E22","#BA4A00","#F5CBA7"],
+      ["#16A085","#0E6655","#A2D9CE"], ["#D35400","#A04000","#EDBB99"],
+      ["#7F8C8D","#566573","#D5DBDB"], ["#C0392B","#7B241C","#F5B7B1"],
+      ["#2E86C1","#1B4F72","#A9CCE3"], ["#28B463","#196F3D","#A9DFBF"],
+      ["#AF7AC5","#6C3483","#D2B4DE"],
+    ];
+    const phaseColors = { "Root": { fill: "#4A4A4A", stroke: "#333333", collapsedFill: "#6C757D" },
+                          "Default": { fill: "#BDC3C7", stroke: "#95A5A6", collapsedFill: "#ECF0F1" } };
+    (initialJsonData.children || []).forEach((c, i) => {
+      const pal = PALETTE[i % PALETTE.length];
+      phaseColors[c.name] = { fill: pal[0], stroke: pal[1], collapsedFill: pal[2] };
+    });
+
+    const levelSpecificPalettes = {
+      0: { fill: "#4A4A4A", stroke: "#333333", collapsedFill: "#6C757D" },
+      2: { fill: "#6ab04c", stroke: "#508a38", collapsedFill: "#a3d391" },
+      3: { fill: "#f0932b", stroke: "#d0730f", collapsedFill: "#f6c07e" },
+      4: { fill: "#be2edd", stroke: "#a01cb3", collapsedFill: "#e08bf2" },
+      5: { fill: "#00a8ff", stroke: "#007ac1", collapsedFill: "#74d2ff" },
+      6: { fill: "#e55039", stroke: "#c23620", collapsedFill: "#f09a8d" },
+      default: { fill: "#747d8c", stroke: "#57606f", collapsedFill: "#a4b0be" }
+    };
+
+    const svgElement = d3.select("#tree-svg");
+    const initialSvgWidth = +svgElement.attr("width");
+    const initialSvgHeight = +svgElement.attr("height");
+    const margin = { top: 40, right: 120, bottom: 80, left: 450 };
+    let width = initialSvgWidth - margin.left - margin.right;
+    let height = initialSvgHeight - margin.top - margin.bottom;
+    const duration = 500;
+    let nodeCounter = 0;
+    const g = svgElement.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+    const treemap = d3.tree().nodeSize([40, 0]);
+    let rootNode = d3.hierarchy(treeData, d => d.children);
+    rootNode.x0 = 0;
+    rootNode.y0 = 0;
+
+    if (rootNode.children) {
+      rootNode.children.forEach(d_child => {
+        if (d_child.children) { collapseBranch(d_child); }
+      });
+    }
+    updateTree(rootNode);
+
+    function collapseBranch(d) { if (d.children) { d._children = d.children; d._children.forEach(collapseBranch); d.children = null; } }
+    function expandBranch(d) { if (d._children) { d.children = d._children; d._children = null; } if (d.children) { d.children.forEach(expandBranch); } }
+    window.expandAll = () => { expandBranch(rootNode); updateTree(rootNode); };
+    window.collapseAll = () => { if (rootNode.children) { rootNode.children.forEach(collapseBranch); } updateTree(rootNode); };
+    window.resetView = () => { if (rootNode.children) { rootNode.children.forEach(d_child => { if (d_child.children || d_child._children) { collapseBranch(d_child); } }); } if (rootNode._children && !rootNode.children) { rootNode.children = rootNode._children; rootNode._children = null; } updateTree(rootNode); };
+
+    function updateTree(source) {
+      const treeLayoutData = treemap(rootNode);
+      let nodes = treeLayoutData.descendants();
+      let links = treeLayoutData.descendants().slice(1);
+
+      let minX = 0;
+      let maxX = 0;
+      if (nodes.length > 0) {
+        minX = d3.min(nodes, d => d.x);
+        maxX = d3.max(nodes, d => d.x);
+      }
+
+      let neededHeight = Math.max(initialSvgHeight, maxX - minX + margin.top + margin.bottom + 100);
+      svgElement.transition().duration(duration / 2).attr("height", neededHeight);
+      g.transition().duration(duration / 2).attr("transform", `translate(${margin.left},${margin.top - minX + 40})`);
+
+      nodes.forEach(d => { d.y = d.depth * 400; }); // Adjust horizontal separation if needed
+
+      const node = g.selectAll('g.node').data(nodes, d => d.id || (d.id = ++nodeCounter));
+      const nodeEnter = node.enter().append('g')
+        .attr('class', d => "node" + (d.children || d._children ? " node--internal" : " node--leaf") + (d._children ? " _children" : ""))
+        .attr('transform', d => `translate(${source.y0},${source.x0})`)
+        .on('click', (event, d) => { if (d.children) { d._children = d.children; d.children = null; } else if (d._children) { d.children = d._children; d._children = null; } updateTree(d); })
+        .style('cursor', d => (d.children || d._children) ? 'pointer' : 'default');
+
+      nodeEnter.append('circle').attr('r', 1e-6);
+
+      nodeEnter.append('text')
+        .attr('dy', '.35em')
+        .attr('x', d => d.children || d._children ? -14 : 14)
+        .attr('text-anchor', d => d.children || d._children ? 'end' : 'start')
+        .style("fill-opacity", 1e-6)
+        .call(wrapText, 380);
+
+      const nodeUpdate = nodeEnter.merge(node);
+      nodeUpdate.transition().duration(duration)
+        .attr('transform', d => `translate(${d.y},${d.x})`)
+        .attr('class', d => "node" + (d.children ? " node--internal" : " node--leaf") + (d._children ? " node--internal _children" : ""));
+
+      nodeUpdate.select('circle').attr('r', 8.5)
+        .style('fill', d => {
+            let palette;
+            if (d.depth === 0) {
+                palette = levelSpecificPalettes[0];
+            } else if (d.depth === 1) {
+                palette = phaseColors[d.data.originalStageName] || phaseColors.Default;
+            } else {
+                palette = levelSpecificPalettes[d.depth] || levelSpecificPalettes.default;
+            }
+            if (d._children) return palette.collapsedFill;
+            if (d.children) return palette.fill;
+            return "#fff";
+        })
+        .style('stroke', d => {
+            let palette;
+            if (d.depth === 0) {
+                palette = levelSpecificPalettes[0];
+            } else if (d.depth === 1) {
+                palette = phaseColors[d.data.originalStageName] || phaseColors.Default;
+            } else {
+                palette = levelSpecificPalettes[d.depth] || levelSpecificPalettes.default;
+            }
+            return palette.stroke;
+        });
+      nodeUpdate.select('text').style("fill-opacity", 1).call(wrapText, 380);
+
+      const nodeExit = node.exit().transition().duration(duration).attr('transform', d => `translate(${source.y},${source.x})`).remove();
+      nodeExit.select('circle').attr('r', 1e-6);
+      nodeExit.select('text').style('fill-opacity', 1e-6);
+
+      const link = g.selectAll('path.link').data(links, d => d.id);
+      const linkEnter = link.enter().insert('path', "g").attr('class', 'link').attr('d', d => { const o = { x: source.x0, y: source.y0 }; return diagonal(o, o); });
+
+      linkEnter.merge(link).transition().duration(duration).attr('d', d => diagonal(d, d.parent))
+        .style('stroke', d => {
+            const sourceNode = d.parent;
+            if (!sourceNode) return phaseColors.Default.stroke;
+            const l1AncestorName = sourceNode.data.originalStageName;
+            const colorPalette = phaseColors[l1AncestorName] || phaseColors.Default;
+            return colorPalette.stroke;
+        });
+      link.exit().transition().duration(duration).attr('d', d => { const o = { x: source.x, y: source.y }; return diagonal(o, o); }).remove();
+      nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
+    }
+
+    function diagonal(s, d) { return `M ${s.y} ${s.x} C ${(s.y + d.y) / 2} ${s.x}, ${(s.y + d.y) / 2} ${d.x}, ${d.y} ${d.x}`; }
+
+    function wrapText(textElements, maxWidth) {
+        const textPartColors = {
+            name: '#343a40',
+            count: '#0056b3'
+        };
+        const countRegex = /(\s\(Total Count: \d+\))$/;
+
+        textElements.each(function () {
+            const textD3 = d3.select(this);
+            const originalNodeText = textD3.datum().data.name;
+            const x = parseFloat(textD3.attr("x") || 0);
+            const initialDy = textD3.attr("dy");
+            const textAnchor = textD3.attr("text-anchor");
+            const lineHeight = 1.1;
+
+            textD3.text(null);
+
+            let namePart = originalNodeText;
+            let countPartText = "";
+
+            const countMatch = originalNodeText.match(countRegex);
+            if (countMatch && originalNodeText.endsWith(countMatch[0])) {
+                namePart = originalNodeText.substring(0, originalNodeText.length - countMatch[0].length).trim();
+                countPartText = countMatch[0].trim();
+            }
+
+            const tokens = [];
+            namePart.split(/\s+/).filter(Boolean).forEach(word => {
+                tokens.push({ text: word, type: 'name' });
+            });
+            if (countPartText) {
+                tokens.push({ text: countPartText, type: 'count' });
+            }
+
+            if (tokens.length === 0 && originalNodeText) {
+                tokens.push({ text: originalNodeText, type: 'name' });
+            }
+
+            let currentTspan = textD3.append("tspan").attr("x", x).attr("dy", initialDy);
+            if (textAnchor === "end") currentTspan.attr("text-anchor", "end");
+
+            let lineTokens = [];
+
+            for (let i = 0; i < tokens.length; i++) {
+                const tokenObj = tokens[i];
+
+                lineTokens.push(tokenObj);
+                currentTspan.text(lineTokens.map(t => t.text).join(" "));
+
+                if (currentTspan.node().getComputedTextLength() > maxWidth && lineTokens.length > 1) {
+                    lineTokens.pop();
+
+                    currentTspan.text(null);
+                    lineTokens.forEach((prevToken, idx) => {
+                        currentTspan.append("tspan")
+                            .text((idx > 0 ? " " : "") + prevToken.text)
+                            .style("fill", textPartColors[prevToken.type] || textPartColors.name)
+                            .style("font-weight", prevToken.type === 'count' ? "bold" : "normal");
+                    });
+
+                    lineTokens = [tokenObj];
+                    currentTspan = textD3.append("tspan").attr("x", x).attr("dy", lineHeight + "em");
+                    if (textAnchor === "end") currentTspan.attr("text-anchor", "end");
+                }
+            }
+
+            currentTspan.text(null);
+            lineTokens.forEach((token, idx) => {
+                currentTspan.append("tspan")
+                    .text((idx > 0 ? " " : "") + token.text)
+                    .style("fill", textPartColors[token.type] || textPartColors.name)
+                    .style("font-weight", token.type === 'count' ? "bold" : "normal");
+            });
+
+            if (textD3.selectAll("tspan > tspan").empty() && textD3.select("tspan").text().length === 0 && originalNodeText) {
+                let t = textD3.select("tspan");
+                let displayText = originalNodeText;
+                t.text(displayText).style("fill", textPartColors.name);
+                if (t.node() && t.node().getComputedTextLength() > maxWidth && displayText.length > 20) {
+                    let estimatedChars = Math.floor(maxWidth / (t.node().getComputedTextLength()/displayText.length) );
+                    displayText = displayText.substring(0, Math.max(0, estimatedChars - 3)) + "...";
+                    t.text(displayText);
+                }
+            }
+        });
+    }
+  </script>
+</body>
+</html>
