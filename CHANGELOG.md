@@ -12,7 +12,7 @@ This file is both:
 - Record those hashes in the immediately following traceability commit.
 - Do not self-record traceability-only commits.
 
-## Unreleased
+## v0.2.0 - 2026-06-29
 
 ### Summary
 
