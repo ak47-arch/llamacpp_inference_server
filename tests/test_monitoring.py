@@ -44,7 +44,7 @@ class StubProvider:
         if self.raise_exc is not None:
             raise self.raise_exc
 
-    def complete(self, prompt: str, system: str = "", params: dict | None = None):
+    def complete(self, prompt: str = "", system: str = "", params: dict | None = None, messages: list | None = None):
         start = service_app.time.monotonic()
         self.complete_calls += 1
         if self.block_started is not None:
@@ -84,7 +84,7 @@ class StubRouter:
 class MonitoringSpecTests(unittest.TestCase):
     def setUp(self):
         monitoring.reset_metrics()
-        local_server_runtime.reset_managed_servers()
+        local_server_runtime._managed_servers.clear()
 
     def _create_app(self, runtime=None):
         return service_app.create_app(runtime=runtime or DummyRuntime())

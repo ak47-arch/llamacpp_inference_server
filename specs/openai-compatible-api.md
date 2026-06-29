@@ -100,7 +100,7 @@ Response body:
   "object": "list",
   "data": [
     {
-      "id": "gemma_e4b_q4_local",
+      "id": "gemma_e2b_q4_local",
       "object": "model",
       "owned_by": "llm"
     }

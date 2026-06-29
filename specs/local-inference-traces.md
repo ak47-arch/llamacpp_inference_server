@@ -166,7 +166,7 @@ Response body:
     {
       "request_id": "req_123",
       "timestamp": "2026-05-31T12:34:56Z",
-      "model": "gemma_e4b_q4_local",
+      "model": "gemma_e2b_q4_local",
       "provider": "openai_compatible",
       "status_code": 200,
       "outcome": "success",

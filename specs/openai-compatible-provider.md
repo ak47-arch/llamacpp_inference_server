@@ -54,14 +54,14 @@ The repository ships bundled OpenAI-compatible local provider configuration in `
 
 The active bundled provider set includes:
 
-- `gemma_e4b_q4_local`
+- `gemma_e2b_q4_local`
 
-`gemma_e4b_q4_local` is configured as a managed local provider backed by:
+`gemma_e2b_q4_local` is configured as a managed local provider backed by:
 
-- model path `/models/google_gemma-4-E4B-it-Q4_K_M.gguf`
-- local managed server port `18014`
+- model path `/models/google_gemma-4-E2B-it-Q4_K_M.gguf`
+- local managed server port `18012`
 - no explicit `ctx_size` override, so `llama-server` uses the model default context size
-- declared active input modalities `text`, `image`, and `audio`
+- declared active input modalities `text` and `image`
 
 Commented-out `gemma_e2b_local` and `gemma_e4b_local` blocks are retained in `service_models.yaml` as reference-only examples for quick re-enablement. The bundled provider blocks keep reasoning-related `llama-server` flags present as commented-out lines inside `managed_server.extra_args` rather than active runtime arguments. Because these lines are commented out, the bundled examples do not actively force reasoning behavior on or off through `extra_args`.
 
@@ -131,15 +131,15 @@ Allowed `capabilities.input_modalities` values are:
 
 The repository's active bundled provider id is:
 
-- `gemma_e4b_q4_local`
+- `gemma_e2b_q4_local`
 
 Commented reference blocks for `gemma_e2b_local` and `gemma_e4b_local` may remain in `service_models.yaml`, but they are inactive until uncommented.
 
-`gemma_e4b_q4_local` uses:
+`gemma_e2b_q4_local` uses:
 
-- `base_url: http://127.0.0.1:18014`
-- `port: 18014`
-- `model_path: /models/google_gemma-4-E4B-it-Q4_K_M.gguf`
+- `base_url: http://127.0.0.1:18012`
+- `port: 18012`
+- `model_path: /models/google_gemma-4-E2B-it-Q4_K_M.gguf`
 - omitted `ctx_size`, allowing `llama-server` to use the model default context size
 
 Bundled providers may declare image support through `capabilities.input_modalities`, but image requests are only valid when the managed runtime also has a resolved projector path.
@@ -246,15 +246,15 @@ Provider capability semantics:
 
 Bundled provider ids currently expected:
 
-- `gemma_e4b_q4_local`
+- `gemma_e2b_q4_local`
 
 Commented reference provider blocks for `gemma_e2b_local` and `gemma_e4b_local` may also appear in `service_models.yaml`, but only uncommented entries are active providers.
 
-`gemma_e4b_q4_local` managed runtime values:
+`gemma_e2b_q4_local` managed runtime values:
 
-- `base_url: http://127.0.0.1:18014`
-- `port: 18014`
-- `model_path: /models/google_gemma-4-E4B-it-Q4_K_M.gguf`
+- `base_url: http://127.0.0.1:18012`
+- `port: 18012`
+- `model_path: /models/google_gemma-4-E2B-it-Q4_K_M.gguf`
 - omitted `ctx_size`, allowing model-default context sizing
 
 Commented reasoning example lines are textual config artifacts, not active runtime arguments.
@@ -273,8 +273,8 @@ Invariants:
 
 ## Rules and Invariants
 
-1. The active bundled provider registry must include only `gemma_e4b_q4_local`.
-2. `gemma_e4b_q4_local` must point to `/models/google_gemma-4-E4B-it-Q4_K_M.gguf`.
+1. The active bundled provider registry must include only `gemma_e2b_q4_local`.
+2. `gemma_e2b_q4_local` must point to `/models/google_gemma-4-E2B-it-Q4_K_M.gguf`.
 3. The active bundled provider must omit `ctx_size` so `llama-server` uses the model default context size.
 4. The reasoning-related `llama-server` lines remain commented out in the bundled provider examples.
 5. Commented provider blocks and reasoning-related lines are documentation/config examples only and must not be interpreted as active runtime arguments.
@@ -307,14 +307,14 @@ Invariants:
 - If a provider declares `image` capability but no projector path resolves at runtime, image requests are rejected as invalid for that provider.
 - If a provider receives only string content or `text` parts, no multimodal projector is required.
 - If a future change adds multimodal support for direct `llama_cpp_provider.py`, this spec must be updated before implementation.
-- If the E4B Q4 model path changes, both the config and this spec must be updated in place.
+- If the active model path changes, both the config and this spec must be updated in place.
 - If bundled example providers are renamed, tests and this spec must be updated together.
 
 ## Acceptance Criteria
 
-1. `service_models.yaml` includes only the active bundled provider `gemma_e4b_q4_local`.
-2. `gemma_e4b_q4_local` uses model path `/models/google_gemma-4-E4B-it-Q4_K_M.gguf`.
-3. `gemma_e4b_q4_local` omits `ctx_size` so the managed runtime uses the model default context size.
+1. `service_models.yaml` includes only the active bundled provider `gemma_e2b_q4_local`.
+2. `gemma_e2b_q4_local` uses model path `/models/google_gemma-4-E2B-it-Q4_K_M.gguf`.
+3. `gemma_e2b_q4_local` omits `ctx_size` so the managed runtime uses the model default context size.
 4. `service_models.yaml` keeps inactive bundled provider examples and reasoning-related `extra_args` example lines commented out.
 5. Repository tests assert the active bundled provider shape, omitted `ctx_size`, and the commented example lines.
 6. `service_models.yaml` example providers do not define `default_params.temperature`.
@@ -333,9 +333,9 @@ Invariants:
 
 ## Test Plan
 
-- Load `service_models.yaml` and assert that `gemma_e4b_q4_local` is the only active bundled provider.
-- Assert that `gemma_e4b_q4_local` points to `/models/google_gemma-4-E4B-it-Q4_K_M.gguf`.
-- Assert that `gemma_e4b_q4_local` omits `ctx_size`.
+- Load `service_models.yaml` and assert that `gemma_e2b_q4_local` is the only active bundled provider.
+- Assert that `gemma_e2b_q4_local` points to `/models/google_gemma-4-E2B-it-Q4_K_M.gguf`.
+- Assert that `gemma_e2b_q4_local` omits `ctx_size`.
 - Read `service_models.yaml` text and assert that inactive provider example blocks and reasoning-related lines remain commented out.
 - Verify example providers in `service_models.yaml` do not define `temperature` or `max_tokens` under `default_params`.
 - Verify outbound payload omits `temperature` and `max_tokens` when neither config nor request supplies them.
@@ -376,10 +376,10 @@ Invariants:
 
 | ID | Requirement | Coverage Status | Evidence (file:line) | Notes |
 |---|---|---|---|---|
-| AC-1 | `service_models.yaml` includes only the active bundled provider `gemma_e4b_q4_local`. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Direct config assertion. |
-| API-1 | `gemma_e4b_q4_local` uses `base_url: http://127.0.0.1:18014`. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Direct config assertion. |
-| API-2 | `gemma_e4b_q4_local` managed runtime uses port `18014`. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Direct config assertion. |
-| AC-2 | `gemma_e4b_q4_local` uses model path `/models/google_gemma-4-E4B-it-Q4_K_M.gguf`. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Direct config assertion. |
+| AC-1 | `service_models.yaml` includes only the active bundled provider `gemma_e2b_q4_local`. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Direct config assertion. |
+| API-1 | `gemma_e2b_q4_local` uses `base_url: http://127.0.0.1:18012`. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Direct config assertion. |
+| API-2 | `gemma_e2b_q4_local` managed runtime uses port `18012`. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Direct config assertion. |
+| AC-2 | `gemma_e2b_q4_local` uses model path `/models/google_gemma-4-E2B-it-Q4_K_M.gguf`. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Direct config assertion. |
 | AC-3 | The active bundled provider omits `ctx_size` so model-default context sizing is used. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Direct config omission assertion. |
 | AC-4 | Inactive provider examples and reasoning-related lines remain commented out in `service_models.yaml`. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Reads config text and checks commented examples. |
 | AC-5 | Commented reasoning lines are not interpreted as active runtime arguments. | COVERED_STRONG | `tests/test_generic_inference_server.py` | Asserts built command omits reasoning flags/values and `-c`. |
@@ -475,7 +475,7 @@ Unverifiable items:
 
 ## Latest Spec Audit Report
 
-Historical note: the embedded verifier reports below were captured before the repository simplified the bundled config to a single active `gemma_e4b_q4_local` provider with model-default context sizing. They are retained as historical artifacts and may reference the older three-provider example layout.
+Historical note: the embedded verifier reports below were captured before the repository simplified the bundled config to a single active `gemma_e2b_q4_local` provider with model-default context sizing. They are retained as historical artifacts and may reference the older three-provider example layout.
 
 
 # Spec Audit Report
@@ -494,8 +494,8 @@ Mapping note: duplicated requirements across Current Behavior, Interfaces, Data 
 
 | ID | Section | Criterion | Status | Evidence (file:line) | Notes |
 |---|---|---|---|---|---|
-| CFG-1 | Bundled example provider set | Bundled provider registry includes `gemma_e2b_local`, `gemma_e4b_local`, and `gemma_e4b_q4_local` | MET | `service_models.yaml:4,32,60`; `tests/test_generic_inference_server.py:51` | All three ids present |
-| CFG-2 | Bundled example provider set / Data Model | `gemma_e4b_q4_local` uses `base_url http://127.0.0.1:18014`, `port 18014`, and model path `/models/google_gemma-4-E4B-it-Q4_K_M.gguf` | MET | `service_models.yaml:68,71,73`; `tests/test_generic_inference_server.py:59-61` | Matches spec |
+| CFG-1 | Bundled example provider set | Bundled provider registry includes `gemma_e2b_local`, `gemma_e4b_local`, and `gemma_e2b_q4_local` | MET | `service_models.yaml:4,32,60`; `tests/test_generic_inference_server.py:51` | All three ids present |
+| CFG-2 | Bundled example provider set / Data Model | `gemma_e2b_q4_local` uses `base_url http://127.0.0.1:18012`, `port 18012`, and model path `/models/google_gemma-4-E2B-it-Q4_K_M.gguf` | MET | `service_models.yaml:68,71,73`; `tests/test_generic_inference_server.py:59-61` | Matches spec |
 | CFG-3 | Commented reasoning example lines | Bundled providers keep reasoning-related `extra_args` lines commented out | MET | `service_models.yaml:23-28,51-56,79-84`; `tests/test_generic_inference_server.py:63` | Comment markers preserved |
 | CFG-4 | Commented reasoning example lines | Commented reasoning lines are not treated as active runtime arguments | MET | `local_server_runtime.py:94-96`; `tests/test_generic_inference_server.py:75` | Runtime only appends actual `extra_args` list items |
 | CFG-5 | Rules / Acceptance Criteria | Bundled example providers do not encode generic `temperature`/`max_tokens` defaults; bundled `default_params` are limited to `timeout_seconds` | MET | `service_models.yaml:29-30,57-58,86-87`; `tests/test_openai_compatible_provider.py:19-29` | No bundled sampling defaults present |
@@ -535,7 +535,7 @@ Mapping note: duplicated requirements across Current Behavior, Interfaces, Data 
 | ID | Spec Criterion | Test Location | Alignment | Gap |
 |---|---|---|---|---|
 | TSA-1 | CFG-1 bundled provider ids present | `tests/test_generic_inference_server.py:51` | ALIGNED | — |
-| TSA-2 | CFG-2 `gemma_e4b_q4_local` base_url/port/model_path | `tests/test_generic_inference_server.py:51` | ALIGNED | — |
+| TSA-2 | CFG-2 `gemma_e2b_q4_local` base_url/port/model_path | `tests/test_generic_inference_server.py:51` | ALIGNED | — |
 | TSA-3 | CFG-3 reasoning lines remain commented | `tests/test_generic_inference_server.py:63` | ALIGNED | — |
 | TSA-4 | CFG-4 commented reasoning lines not active at runtime | `tests/test_generic_inference_server.py:75` | ALIGNED | — |
 | TSA-5 | CFG-5 bundled defaults omit generic sampling defaults | `tests/test_openai_compatible_provider.py:19` | ALIGNED | — |

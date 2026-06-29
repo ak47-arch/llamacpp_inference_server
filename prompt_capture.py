@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
+import json
 import os
 import queue
 import re
@@ -12,10 +13,31 @@ import threading
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any
+from pathlib import Path
+from typing import Any, Protocol
 
 from . import monitoring
-from .capture_sinks import NDJSONCaptureSink
+
+
+class CaptureSink(Protocol):
+    """Protocol for durable prompt-capture record sinks."""
+
+    def write(self, record: dict) -> None:
+        ...
+
+
+class NDJSONCaptureSink:
+    """Writes capture records as newline-delimited JSON to a file."""
+
+    def __init__(self, path: str | Path):
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def write(self, record: dict) -> None:
+        with self.path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, sort_keys=True))
+            handle.write("\n")
+
 
 _ALLOWED_MODES = {"off", "metadata", "full"}
 _ALLOWED_REDACTION_LEVELS = {"off", "basic", "strict"}

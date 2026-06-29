@@ -60,24 +60,23 @@
 #      timeout_seconds: 300
 
 providers:
-  - id: gemma_e4b_q4_local
+  - id: gemma_e2b_q4_local
     provider_type: openai_compatible
-    model_name: gemma_e4b_q4_local
+    model_name: gemma_e2b_q4_local
     capabilities:
       input_modalities:
         - text
         - image
-        - audio
     connection:
-      base_url: http://127.0.0.1:18014
+      base_url: http://127.0.0.1:18012
       managed_server:
         binary_path: /opt/llama-cpp/llama-server
-        model_path: /models/google_gemma-4-E4B-it-Q4_K_M.gguf
+        model_path: /models/google_gemma-4-E2B-it-Q4_K_M.gguf
         host: 127.0.0.1
-        port: 18014
+        port: 18012
         startup_timeout_seconds: 180
         threads: 8
-        mmproj_path_env: GEMMA_E4B_Q4_LOCAL_MMPROJ_PATH
+        mmproj_path_env: GEMMA_E2B_Q4_LOCAL_MMPROJ_PATH
         extra_args:
 #          - --reasoning
 #          - "off"
@@ -88,4 +87,3 @@ providers:
     default_params:
       timeout_seconds: 300
 
-pipeline_routing: {}  # Optional logical-role routing; not used by the HTTP chat completions endpoint.

@@ -79,10 +79,10 @@ class BlockingStream:
 
 class OperationalLoggingTests(unittest.TestCase):
     def setUp(self):
-        local_server_runtime.reset_managed_servers()
+        local_server_runtime._managed_servers.clear()
 
     def tearDown(self):
-        local_server_runtime.reset_managed_servers()
+        local_server_runtime._managed_servers.clear()
 
     def _chat_payload(self):
         return {
@@ -387,17 +387,7 @@ class OperationalLoggingTests(unittest.TestCase):
         self.assertIn("event=failure", combined)
         self.assertIn("base_url=http://127.0.0.1:18012", combined)
 
-    def test_reset_managed_servers_logs_termination(self):
-        process = Mock()
-        process.poll.return_value = None
-        local_server_runtime._managed_servers["http://127.0.0.1:18012"] = process
 
-        with self.assertLogs("llm.runtime", level="INFO") as captured:
-            local_server_runtime.reset_managed_servers()
-
-        combined = "\n".join(captured.output)
-        self.assertIn("event=terminate", combined)
-        self.assertIn("base_url=http://127.0.0.1:18012", combined)
 
 
 if __name__ == "__main__":

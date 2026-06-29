@@ -156,8 +156,17 @@ def current_request_metric_labels() -> tuple[str, str, str]:
     )
 
 
-def clear_request_context() -> None:
+def start_request_context(route: str) -> None:
+    """Initialize per-request context. Call at the start of request processing."""
+    context = {"route": route, "model": "none", "provider": "none"}
+    _REQUEST_CONTEXT.set(context)
+    _in_flight_requests.labels(route=route).inc()
+
+
+def end_request_context(route: str) -> None:
+    """Clean up per-request context. Call after request processing completes."""
     _REQUEST_CONTEXT.set(None)
+    _in_flight_requests.labels(route=route).dec()
 
 
 def set_resolved_model(model: str | None) -> None:

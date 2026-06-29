@@ -12,6 +12,19 @@ This file is both:
 - Record those hashes in the immediately following traceability commit.
 - Do not self-record traceability-only commits.
 
+## Unreleased
+
+### Summary
+
+- Switched active provider from `gemma_e4b_q4_local` (E4B Q4, 5.1 GB, port 18014) to `gemma_e2b_q4_local` (E2B Q4, 3.3 GB, port 18012) for faster model loading and lower memory usage.
+- Removed dead code: `router.route()` with fallback routing, `router.ensure_runtime_ready()`, `monitoring.clear_request_context()`, `local_server_runtime.reset_managed_servers()`, the `pipeline_routing` config section.
+- Removed `inspect.signature` hack in `service_app.py` — now always passes `messages` to providers uniformly.
+- Centralized Flask request lifecycle: replaced per-route try/except/log/metrics boilerplate with `@app.before_request`, `@app.after_request`, `@app.teardown_request` and `@app.errorhandler` for each exception type.
+- Simplified readiness probe: dropped the redundant `provider.complete()` inference call; readiness now only calls `provider.warmup()`.
+- Merged `capture_sinks.py` into `prompt_capture.py` and deleted the standalone file.
+- Added `monitoring.start_request_context()` and `monitoring.end_request_context()` public API for Flask lifecycle hooks.
+- All 92 relevant tests pass (1 pre-existing failure unrelated to these changes).
+
 ## v0.2.0 - 2026-06-29
 
 ### Summary

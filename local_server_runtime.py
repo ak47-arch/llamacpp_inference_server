@@ -251,16 +251,3 @@ def ensure_managed_server(
         duration_seconds=duration_seconds,
     )
     _managed_servers[base_url] = process
-
-
-def reset_managed_servers() -> None:
-    for base_url, process in list(_managed_servers.items()):
-        if process.poll() is None:
-            _RUNTIME_LOGGER.info("event=terminate model=unknown base_url=%s", base_url)
-            process.terminate()
-            try:
-                process.wait(timeout=2)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=2)
-    _managed_servers.clear()

@@ -1,11 +1,10 @@
 """Dedicated HTTP service for shared LLM inference."""
 
-import inspect
 import logging
 import os
 import time
 
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, g, jsonify, request
 
 from . import monitoring, prompt_capture
 from .provider_base import ProviderTimeoutError, ProviderUnavailableError
@@ -119,15 +118,6 @@ class LLMServiceRuntime:
             start = time.monotonic()
             try:
                 provider.warmup()
-                result = provider.complete(
-                    "Readiness probe: respond with ok.",
-                    "You are a healthcheck probe. Reply with exactly 'ok'.",
-                    {
-                        "temperature": 0.0,
-                        "max_tokens": 4,
-                        "timeout_seconds": 20,
-                    },
-                )
             except Exception as exc:
                 monitoring.observe_readiness(
                     model=provider_id,
@@ -139,7 +129,7 @@ class LLMServiceRuntime:
 
             monitoring.observe_readiness(
                 model=provider_id,
-                provider=result.provider or provider_name,
+                provider=provider_name,
                 outcome="success",
                 duration_seconds=time.monotonic() - start,
             )
@@ -185,11 +175,9 @@ class LLMServiceRuntime:
         prompt = "\n\n".join(part for part in prompt_parts if isinstance(part, str) and part)
         system = "\n\n".join(part for part in system_parts if isinstance(part, str) and part)
 
-        supports_messages_arg = "messages" in inspect.signature(provider.complete).parameters
-        if provider_name == "openai_compatible" and supports_messages_arg:
-            result = provider.complete(params=params or None, messages=validated_messages)
-        else:
-            result = provider.complete(prompt, system, params or None)
+        result = provider.complete(
+            prompt=prompt, system=system, params=params or None, messages=validated_messages
+        )
 
         monitoring.set_resolved_provider(result.provider or provider_name)
 
@@ -477,85 +465,95 @@ def create_app(runtime: LLMServiceRuntime | None = None, capture_manager: prompt
     prompt_capture_manager = capture_manager or prompt_capture.build_capture_manager_from_env()
     app.extensions["prompt_capture_manager"] = prompt_capture_manager
 
-    @app.get("/health")
-    def health():
-        route = "/health"
-        start = time.monotonic()
-        with monitoring.request_context(route), monitoring.track_in_flight(route):
+    # ----- Request lifecycle hooks -----
+
+    @app.before_request
+    def _before_request():
+        g.start_time = time.monotonic()
+        g.route = request.path
+        if g.route != "/metrics":
+            monitoring.start_request_context(g.route)
+
+    @app.after_request
+    def _after_request(response):
+        if not hasattr(g, "start_time"):
+            return response
+        duration = time.monotonic() - g.start_time
+        outcome = getattr(g, "outcome", "success")
+        model, provider = monitoring.current_request_labels()
+        _log_service_access(request.method, g.route, response.status_code, duration)
+        if outcome != "success":
+            _log_service_failure(g.route, response.status_code, outcome)
+        if g.route != "/metrics":
+            monitoring.observe_request(
+                route=g.route, model=model, provider=provider,
+                outcome=outcome, duration_seconds=duration,
+            )
+        # Prompt capture for chat-completions traffic
+        if g.route == "/v1/chat/completions" and hasattr(g, "_capture_data"):
+            data = g._capture_data
+            capture_body = response.get_json()
+            if capture_body is None:
+                capture_body = {}
             try:
-                response = jsonify({"status": "ok", "service": "inference-server"})
-                outcome = "success"
-                status_code = 200
-            except Exception as exc:
-                duration_seconds = time.monotonic() - start
-                _log_service_failure(route, 500, "server_error")
-                _log_service_access(request.method, route, 500, duration_seconds)
-                model, provider = monitoring.current_request_labels()
-                monitoring.observe_request(
-                    route=route,
+                app.extensions["prompt_capture_manager"].capture_chat_completion(
+                    request_id=data["request_id"],
+                    route=g.route,
+                    payload=data["payload"],
                     model=model,
                     provider=provider,
-                    outcome=monitoring.classify_exception(exc),
-                    duration_seconds=duration_seconds,
+                    status_code=response.status_code,
+                    outcome=outcome,
+                    response_body=capture_body,
                 )
-                raise
+            except Exception:
+                _SERVICE_LOGGER.exception("Prompt capture failed")
+        return response
 
-            duration_seconds = time.monotonic() - start
-            _log_service_access(request.method, route, status_code, duration_seconds)
-            model, provider = monitoring.current_request_labels()
-            monitoring.observe_request(
-                route=route,
-                model=model,
-                provider=provider,
-                outcome=outcome,
-                duration_seconds=duration_seconds,
-            )
-            return response
+    @app.teardown_request
+    def _teardown_request(exc=None):
+        if hasattr(g, "route") and g.route != "/metrics":
+            monitoring.end_request_context(g.route)
+
+    # ----- Error handlers -----
+
+    @app.errorhandler(ValueError)
+    def _value_error(exc):
+        if getattr(g, "route", "") == "/ready":
+            g.outcome = "unavailable"
+            return _error_response(503, "runtime_unavailable", str(exc))
+        g.outcome = "client_error"
+        return _error_response(400, "invalid_request", str(exc))
+
+    @app.errorhandler(ProviderTimeoutError)
+    def _provider_timeout(exc):
+        g.outcome = "timeout"
+        if getattr(g, "route", "") == "/ready":
+            return _error_response(503, "runtime_unavailable", str(exc))
+        return _error_response(504, "timeout", str(exc))
+
+    @app.errorhandler(ProviderUnavailableError)
+    @app.errorhandler(RuntimeError)
+    @app.errorhandler(KeyError)
+    def _provider_unavailable(exc):
+        g.outcome = "unavailable"
+        return _error_response(503, "runtime_unavailable", str(exc))
+
+    @app.errorhandler(Exception)
+    def _server_error(exc):
+        g.outcome = "server_error"
+        _SERVICE_LOGGER.exception("Unhandled exception serving request")
+        return _error_response(500, "server_error", str(exc))
+
+    # ----- Routes -----
+
+    @app.get("/health")
+    def health():
+        return jsonify({"status": "ok", "service": "inference-server"})
 
     @app.get("/ready")
     def ready():
-        route = "/ready"
-        start = time.monotonic()
-        with monitoring.request_context(route), monitoring.track_in_flight(route):
-            try:
-                response = jsonify(service_runtime.readiness())
-                outcome = "success"
-                status_code = 200
-            except ProviderTimeoutError as exc:
-                outcome = "timeout"
-                status_code = 503
-                response = _error_response(503, "runtime_unavailable", str(exc))
-            except (ProviderUnavailableError, RuntimeError, KeyError, ValueError) as exc:
-                outcome = monitoring.classify_readiness_exception(exc)
-                status_code = 503
-                response = _error_response(503, "runtime_unavailable", str(exc))
-            except Exception as exc:
-                duration_seconds = time.monotonic() - start
-                _log_service_failure(route, 500, "server_error")
-                _log_service_access(request.method, route, 500, duration_seconds)
-                model, provider = monitoring.current_request_labels()
-                monitoring.observe_request(
-                    route=route,
-                    model=model,
-                    provider=provider,
-                    outcome=monitoring.classify_exception(exc),
-                    duration_seconds=duration_seconds,
-                )
-                raise
-
-            duration_seconds = time.monotonic() - start
-            if outcome != "success":
-                _log_service_failure(route, status_code, outcome)
-            _log_service_access(request.method, route, status_code, duration_seconds)
-            model, provider = monitoring.current_request_labels()
-            monitoring.observe_request(
-                route=route,
-                model=model,
-                provider=provider,
-                outcome=outcome,
-                duration_seconds=duration_seconds,
-            )
-            return response
+        return jsonify(service_runtime.readiness())
 
     @app.get("/v1/models")
     def list_models():
@@ -571,79 +569,13 @@ def create_app(runtime: LLMServiceRuntime | None = None, capture_manager: prompt
 
     @app.post("/v1/chat/completions")
     def chat_completions():
-        route = "/v1/chat/completions"
-        start = time.monotonic()
         payload = request.get_json(silent=True) or {}
-        request_id = prompt_capture_manager.new_request_id()
-        with monitoring.request_context(route), monitoring.track_in_flight(route):
-            try:
-                response_body = service_runtime.complete_chat(payload)
-                outcome = "success"
-                status_code = 200
-                response = jsonify(response_body)
-            except ValueError as exc:
-                outcome = "client_error"
-                status_code = 400
-                response_body = _error_body("invalid_request", str(exc))
-                response = jsonify(response_body), status_code
-            except ProviderTimeoutError as exc:
-                outcome = "timeout"
-                status_code = 504
-                response_body = _error_body("timeout", str(exc))
-                response = jsonify(response_body), status_code
-            except (ProviderUnavailableError, RuntimeError, KeyError) as exc:
-                outcome = monitoring.classify_exception(exc)
-                status_code = 503
-                response_body = _error_body("runtime_unavailable", str(exc))
-                response = jsonify(response_body), status_code
-            except Exception as exc:
-                duration_seconds = time.monotonic() - start
-                response_body = _error_body("server_error", str(exc))
-                _log_service_failure(route, 500, "server_error")
-                _log_service_access(request.method, route, 500, duration_seconds)
-                model, provider = monitoring.current_request_labels()
-                monitoring.observe_request(
-                    route=route,
-                    model=model,
-                    provider=provider,
-                    outcome=monitoring.classify_exception(exc),
-                    duration_seconds=duration_seconds,
-                )
-                prompt_capture_manager.capture_chat_completion(
-                    request_id=request_id,
-                    route=route,
-                    payload=payload,
-                    model=model,
-                    provider=provider,
-                    status_code=500,
-                    outcome="server_error",
-                    response_body=response_body,
-                )
-                raise
-
-            duration_seconds = time.monotonic() - start
-            if outcome != "success":
-                _log_service_failure(route, status_code, outcome)
-            _log_service_access(request.method, route, status_code, duration_seconds)
-            model, provider = monitoring.current_request_labels()
-            monitoring.observe_request(
-                route=route,
-                model=model,
-                provider=provider,
-                outcome=outcome,
-                duration_seconds=duration_seconds,
-            )
-            prompt_capture_manager.capture_chat_completion(
-                request_id=request_id,
-                route=route,
-                payload=payload,
-                model=model,
-                provider=provider,
-                status_code=status_code,
-                outcome=outcome,
-                response_body=response_body,
-            )
-            return response
+        g._capture_data = {
+            "request_id": prompt_capture_manager.new_request_id(),
+            "payload": payload,
+        }
+        response_body = service_runtime.complete_chat(payload)
+        return jsonify(response_body)
 
     @app.get("/openapi.json")
     def openapi_schema():

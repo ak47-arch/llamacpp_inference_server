@@ -1,17 +1,12 @@
 """Loads provider configuration and routes inference calls by logical role."""
 
 import os
-from typing import Optional
-
 import yaml
 
 from .llama_cpp_provider import LlamaCppProvider
 from .openai_compatible_provider import OpenAICompatibleProvider
 from .provider_base import (
     BaseProvider,
-    CompletionResult,
-    ProviderTimeoutError,
-    ProviderUnavailableError,
 )
 
 
@@ -28,7 +23,7 @@ class ProviderRouter:
             provider = self._build_provider(entry, base_dir)
             self._providers[entry["id"]] = provider
 
-        self._routing: dict[str, str] = config.get("pipeline_routing", {})
+
 
     def _build_provider(self, entry: dict, base_dir: str) -> BaseProvider:
         ptype = entry["provider_type"]
@@ -65,40 +60,6 @@ class ProviderRouter:
 
         raise ValueError(f"Unknown provider_type '{ptype}' for provider '{pid}'")
 
-    def route(
-        self,
-        role: str,
-        prompt: str,
-        system: str = "",
-        params: Optional[dict] = None,
-    ) -> CompletionResult:
-        provider_ids = self._resolve_provider_ids(role)
-        if not provider_ids:
-            raise KeyError(f"No provider configured for role '{role}'")
-
-        last_error = None
-        for provider_id in provider_ids:
-            provider = self._providers.get(provider_id)
-            if not provider:
-                raise KeyError(f"Provider '{provider_id}' not found in registry")
-            try:
-                return provider.complete(prompt, system, params)
-            except (ProviderTimeoutError, ProviderUnavailableError) as exc:
-                last_error = exc
-
-        raise last_error
-
-    def _resolve_provider_ids(self, role: str) -> list[str]:
-        route_entry = self._routing.get(role)
-        if route_entry is None:
-            return []
-        if isinstance(route_entry, str):
-            return [route_entry]
-        if isinstance(route_entry, dict):
-            primary = route_entry.get("primary")
-            fallback_ids = route_entry.get("fallback_ids", [])
-            return [provider_id for provider_id in [primary, *fallback_ids] if provider_id]
-        raise ValueError(f"Invalid routing entry for role '{role}'")
 
     def provider_ids(self) -> list:
         return list(self._providers.keys())
@@ -109,13 +70,4 @@ class ProviderRouter:
             raise KeyError(f"Provider '{provider_id}' not found in registry")
         return provider
 
-    def routing(self) -> dict:
-        return dict(self._routing)
 
-    def ensure_runtime_ready(self, role: Optional[str] = None) -> None:
-        provider_ids = self._resolve_provider_ids(role) if role else self.provider_ids()
-        for provider_id in provider_ids:
-            provider = self._providers.get(provider_id)
-            if provider is None:
-                continue
-            provider.warmup()

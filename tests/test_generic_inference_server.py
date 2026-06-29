@@ -85,17 +85,17 @@ class GenericInferenceServerTests(unittest.TestCase):
         self.assertNotIn("COPY llm/ ./llm/", content)
         self.assertNotIn("COPY config/ ./config/", content)
 
-    def test_service_models_declare_only_q4_e4b_bundled_provider(self):
+    def test_service_models_declare_only_q4_e2b_bundled_provider(self):
         config = yaml.safe_load((REPO_ROOT / "service_models.yaml").read_text())
         providers = config["providers"]
         self.assertEqual(len(providers), 1)
 
         provider = providers[0]
-        self.assertEqual(provider["id"], "gemma_e4b_q4_local")
-        self.assertEqual(provider["connection"]["base_url"], "http://127.0.0.1:18014")
-        self.assertEqual(provider["connection"]["managed_server"]["port"], 18014)
-        self.assertEqual(provider["connection"]["managed_server"]["model_path"], "/models/google_gemma-4-E4B-it-Q4_K_M.gguf")
-        self.assertEqual(set(provider["capabilities"]["input_modalities"]), {"text", "image", "audio"})
+        self.assertEqual(provider["id"], "gemma_e2b_q4_local")
+        self.assertEqual(provider["connection"]["base_url"], "http://127.0.0.1:18012")
+        self.assertEqual(provider["connection"]["managed_server"]["port"], 18012)
+        self.assertEqual(provider["connection"]["managed_server"]["model_path"], "/models/google_gemma-4-E2B-it-Q4_K_M.gguf")
+        self.assertEqual(set(provider["capabilities"]["input_modalities"]), {"text", "image"})
         self.assertNotIn("ctx_size", provider["connection"]["managed_server"])
 
     def test_service_models_comments_out_disabled_provider_examples_and_reasoning_arguments(self):
@@ -103,7 +103,7 @@ class GenericInferenceServerTests(unittest.TestCase):
         self.assertIn("#  - id: gemma_e2b_local", content)
         self.assertIn("#  - id: gemma_e4b_local", content)
 
-        block = content.split("- id: gemma_e4b_q4_local", 1)[1]
+        block = content.split("- id: gemma_e2b_q4_local", 1)[1]
         self.assertIn("#          - --reasoning", block)
         self.assertIn('#          - "off"', block)
         self.assertIn("#          - --reasoning-budget", block)
@@ -113,7 +113,7 @@ class GenericInferenceServerTests(unittest.TestCase):
 
     def test_commented_reasoning_lines_do_not_become_active_runtime_arguments(self):
         config = yaml.safe_load((REPO_ROOT / "service_models.yaml").read_text())
-        provider = next(provider for provider in config["providers"] if provider["id"] == "gemma_e4b_q4_local")
+        provider = next(provider for provider in config["providers"] if provider["id"] == "gemma_e2b_q4_local")
         command = local_server_runtime._build_server_command(
             binary_path=provider["connection"]["managed_server"]["binary_path"],
             model_path=provider["connection"]["managed_server"]["model_path"],

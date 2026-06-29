@@ -73,23 +73,23 @@ The server reads provider definitions from `service_models.yaml`.
 Current defaults assume:
 - model files mounted at `/models`
 - `llama.cpp` binaries mounted at `/opt/llama-cpp`
-- the managed local runtime listening on port `18014`
+- the managed local runtime listening on port `18012`
 
 Bundled OpenAI-compatible local provider:
-- `gemma_e4b_q4_local`
+- `gemma_e2b_q4_local`
 
-Commented-out E2B and non-Q4 E4B provider blocks remain in `service_models.yaml` as quick re-enable examples.
+Commented-out E2B and E4B provider blocks remain in `service_models.yaml` as quick re-enable examples.
 
 The bundled managed runtime uses the model's default context size by omitting an explicit `ctx_size` override.
-The active bundled provider currently declares `text`, `image`, and `audio` input support.
+The active bundled provider currently declares `text` and `image` input support.
 For working Gemma 4 audio over the OpenAI-compatible HTTP path, use a recent `llama.cpp` build that reports audio modality support in `/props`; older builds such as the previously tested `b8763` exposed vision but not HTTP audio for Gemma 4.
 
 For image input, the managed runtime also needs a matching multimodal projector (`mmproj`) file.
 The checked-in `docker-compose.yml` expects:
-- `/models/mmproj-google_gemma-4-E4B-it-f16.gguf`
+- `/models/mmproj-google_gemma-4-E2B-it-f16.gguf`
 
 via this environment variable:
-- `GEMMA_E4B_Q4_LOCAL_MMPROJ_PATH`
+- `GEMMA_E2B_Q4_LOCAL_MMPROJ_PATH`
 
 ## Local run
 
@@ -209,7 +209,7 @@ Example response:
   "object": "list",
   "data": [
     {
-      "id": "gemma_e4b_q4_local",
+      "id": "gemma_e2b_q4_local",
       "object": "model",
       "owned_by": "llm"
     }
@@ -229,7 +229,7 @@ curl http://127.0.0.1:8012/metrics
 curl -X POST http://127.0.0.1:8012/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -d '{
-    "model": "gemma_e4b_q4_local",
+    "model": "gemma_e2b_q4_local",
     "messages": [
       {"role": "system", "content": "You are concise."},
       {"role": "user", "content": "Say hello."}
@@ -245,7 +245,7 @@ Structured multimodal requests use standard OpenAI-style content arrays:
 curl -X POST http://127.0.0.1:8012/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -d '{
-    "model": "gemma_e4b_q4_local",
+    "model": "gemma_e2b_q4_local",
     "messages": [
       {
         "role": "user",
