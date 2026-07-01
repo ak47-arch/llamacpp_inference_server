@@ -78,12 +78,12 @@ providers:
         threads: 8
         mmproj_path_env: GEMMA_E2B_Q4_LOCAL_MMPROJ_PATH
         extra_args:
-#          - --reasoning
-#          - "off"
-#          - --reasoning-budget
-#          - "0"
-#          - --reasoning-format
-#          - none
+          - --reasoning
+          - "off"
+          - --reasoning-budget
+          - "0"
+          - --reasoning-format
+          - "none"
     default_params:
       timeout_seconds: 300
 
