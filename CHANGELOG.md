@@ -12,7 +12,7 @@ This file is both:
 - Record those hashes in the immediately following traceability commit.
 - Do not self-record traceability-only commits.
 
-## Unreleased
+## v0.3.0 - 2026-07-02
 
 ### Summary
 
@@ -24,6 +24,13 @@ This file is both:
 - Merged `capture_sinks.py` into `prompt_capture.py` and deleted the standalone file.
 - Added `monitoring.start_request_context()` and `monitoring.end_request_context()` public API for Flask lifecycle hooks.
 - All 92 relevant tests pass (1 pre-existing failure unrelated to these changes).
+
+## Unreleased
+
+### Summary
+
+- Added `docs/technical/ARCHITECTURE_REVIEW_2026-07.md` — deep-module analysis based on graphify AST graph.
+- Added explicit `reasoning=off` argument in active provider to disable LLM reasoning preamble for structured outputs.
 
 ## v0.2.0 - 2026-06-29
 
