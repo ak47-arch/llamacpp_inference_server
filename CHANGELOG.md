@@ -32,7 +32,7 @@ This file is both:
 - Added `docs/technical/ARCHITECTURE_REVIEW_2026-07.md` — deep-module analysis based on graphify AST graph.
 - Added explicit `reasoning=off` argument in active provider to disable LLM reasoning preamble for structured outputs.
 
-## Unreleased
+## v0.5.0 - 2026-07-02
 
 ### Summary
 
@@ -42,6 +42,13 @@ This file is both:
   - Typed exceptions: `LLMClientError`, `LLMTimeoutError`, `LLMUnavailableError`, `LLMBadResponseError`.
   - 34 tests (31 unit + 3 integration) all passing.
 - Added `pyproject.toml` for pip-installable packaging.
+
+## v0.5.1 - 2026-07-02
+
+### Summary
+
+- Fixed `_fallback_or_error` to pass `user_prompt` text (not the messages array) to fallback functions.
+  - This fixes YAML-configured fallback functions (e.g., `heuristic_classify`) that expect a plain string argument.
 
 ## v0.2.0 - 2026-06-29
 

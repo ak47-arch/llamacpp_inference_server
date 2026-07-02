@@ -283,7 +283,54 @@ See:
 - `specs/TEMPLATE.md`
 - `CHANGELOG.md`
 
+## `llm_client` — Shared pip-installable workflow client
+
+This repository also ships `llm_client/`, a pip-installable Python package (`llm-client`)
+that any project can use to call LLM workflows in a uniform way.
+
+### Install
+
+```bash
+pip install llm-client
+```
+
+(Or install from source: `pip install /path/to/llm/`)
+
+### Configure
+
+Create a `config/workflows.yaml` in your project:
+
+```yaml
+models:
+  fast:
+    url: "${MY_LLM_BASE_URL}"
+    model: "gemma2:latest"
+    timeout: 90
+
+workflows:
+  classify_tweet:
+    model_ref: fast
+    temperature: 0.0
+    max_tokens: 128
+    output: json
+    system_prompt: "Classify the following tweet into a category."
+    fallback: my_project.fallback.heuristic_classify
+```
+
+### Use
+
+```python
+from llm_client import WorkflowClient
+
+client = WorkflowClient("config/workflows.yaml")
+result = client.complete_text("classify_tweet", prompt="A tweet about AI...")
+print(result.data)   # parsed JSON
+print(result.text)   # raw response
+```
+
+See `llm_client/` source and 34 passing tests for the full API.
+
 ## Notes
 
-- This repository intentionally contains only generic inference-server code.
+- This repository intentionally contains only generic inference-server code and the shared `llm_client` package.
 - Legacy application-specific extraction, queue, benchmark, and wiki-generation code has been removed.
