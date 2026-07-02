@@ -91,13 +91,13 @@ class WorkflowClient:
             return self._fallback_or_error(
                 workflow_name, workflow,
                 error=f"Connection refused: {exc}",
-                fallback_args=(request_messages,),
+                user_prompt=user_prompt,
             )
         except requests.exceptions.Timeout as exc:
             return self._fallback_or_error(
                 workflow_name, workflow,
                 error=f"Timed out after {model_entry.timeout}s: {exc}",
-                fallback_args=(request_messages,),
+                user_prompt=user_prompt,
             )
         except requests.exceptions.HTTPError as exc:
             latency = (time.monotonic() - start) * 1000
@@ -110,7 +110,7 @@ class WorkflowClient:
             return self._fallback_or_error(
                 workflow_name, workflow,
                 error=str(exc),
-                fallback_args=(request_messages,),
+                user_prompt=user_prompt,
             )
 
         latency = (time.monotonic() - start) * 1000
@@ -124,7 +124,7 @@ class WorkflowClient:
                 workflow_name, workflow,
                 error=f"Unexpected response structure: {exc}",
                 raw_text=str(body),
-                fallback_args=(request_messages,),
+                user_prompt=user_prompt,
             )
 
         result = WorkflowResult(
@@ -141,7 +141,7 @@ class WorkflowClient:
                     workflow_name, workflow,
                     error="Failed to parse response as JSON",
                     raw_text=raw_text,
-                    fallback_args=(request_messages,),
+                    user_prompt=user_prompt,
                 )
             result.data = parsed
 
@@ -280,13 +280,14 @@ class WorkflowClient:
         *,
         error: str,
         raw_text: str = "",
-        fallback_args: tuple = (),
+        user_prompt: str | None = None,
     ) -> WorkflowResult:
         """Try the configured fallback, or return an error result.
 
-        If a fallback function is configured, it is called with the original
-        ``fallback_args`` (the messages array). If the fallback itself raises,
-        its exception message is reflected in the error result.
+        If a fallback function is configured, it is called with the
+        ``user_prompt`` text (or the raw response text if no prompt was given).
+        If the fallback itself raises, its exception message is reflected
+        in the error result.
         """
         fallback_path = workflow.get("fallback", "none")
         fallback_fn = self._resolve_fallback(fallback_path)
@@ -298,8 +299,9 @@ class WorkflowClient:
                 error=error,
             )
 
+        fallback_input = user_prompt if user_prompt is not None else raw_text
         try:
-            fallback_result = fallback_fn(*fallback_args)
+            fallback_result = fallback_fn(fallback_input)
             return WorkflowResult(
                 data=fallback_result if isinstance(fallback_result, (dict, list)) else None,
                 text=str(fallback_result) if not isinstance(fallback_result, (dict, list)) else "",
