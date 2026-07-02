@@ -16,3 +16,6 @@ gemma/*.gguf
 
 Free_Test_Data_10MB_WAV.wav
 tmp/capture.ndjson
+
+# Build artifacts
+*.egg-info/

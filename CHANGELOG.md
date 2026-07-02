@@ -25,12 +25,23 @@ This file is both:
 - Added `monitoring.start_request_context()` and `monitoring.end_request_context()` public API for Flask lifecycle hooks.
 - All 92 relevant tests pass (1 pre-existing failure unrelated to these changes).
 
-## Unreleased
+## v0.4.0 - 2026-07-02
 
 ### Summary
 
 - Added `docs/technical/ARCHITECTURE_REVIEW_2026-07.md` — deep-module analysis based on graphify AST graph.
 - Added explicit `reasoning=off` argument in active provider to disable LLM reasoning preamble for structured outputs.
+
+## Unreleased
+
+### Summary
+
+- Added `llm_client/` package — a pip-installable shared LLM workflow client (`llm-client`).
+  - `WorkflowClient` class with `complete()` and `complete_text()` driven by per-project `config/workflows.yaml`.
+  - Pydantic-based config models with env-var substitution, JSON output parsing, fallback resolution.
+  - Typed exceptions: `LLMClientError`, `LLMTimeoutError`, `LLMUnavailableError`, `LLMBadResponseError`.
+  - 34 tests (31 unit + 3 integration) all passing.
+- Added `pyproject.toml` for pip-installable packaging.
 
 ## v0.2.0 - 2026-06-29
 
