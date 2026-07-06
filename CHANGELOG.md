@@ -43,6 +43,13 @@ This file is both:
   - 34 tests (31 unit + 3 integration) all passing.
 - Added `pyproject.toml` for pip-installable packaging.
 
+## v0.5.2 - 2026-07-06
+
+### Summary
+
+- Added `llm_client` section to README with usage examples, workflow configuration guide, and migration notes from direct provider calls.
+- Finalized CHANGELOG entries for v0.5.0 and v0.5.1 with traceability commit hashes.
+
 ## v0.5.1 - 2026-07-02
 
 ### Summary
