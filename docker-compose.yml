@@ -24,6 +24,7 @@ services:
       - ./gemma:/models:ro
       - ${LLAMA_CPP_DIR:?set LLAMA_CPP_DIR}:/opt/llama-cpp:ro
       - ./tmp:/tmp:rw
+      - ./service_models.yaml:/app/llm/service_models.yaml:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8012/health', timeout=30)"]
       interval: 10s

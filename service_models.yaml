@@ -1,89 +1,27 @@
-# Provider registry for the generic inference server.
-#
-# Only `gemma_e4b_q4_local` is active.
-# Disabled example providers are retained below as commented reference blocks
-# so they can be re-enabled quickly without reconstructing the config.
-#
-# Disabled example providers retained for reference:
-#  - id: gemma_e2b_local
-#    provider_type: openai_compatible
-#    model_name: gemma_e2b_local
-#    capabilities:
-#      input_modalities:
-#        - text
-#        - image
-#    connection:
-#      base_url: http://127.0.0.1:18012
-#      managed_server:
-#        binary_path: /opt/llama-cpp/llama-server
-#        model_path: /models/google_gemma-4-E2B-it-Q4_K_M.gguf
-#        host: 127.0.0.1
-#        port: 18012
-#        startup_timeout_seconds: 180
-#        threads: 8
-#        mmproj_path_env: GEMMA_E2B_LOCAL_MMPROJ_PATH
-#        extra_args:
-##          - --reasoning
-##          - "off"
-##          - --reasoning-budget
-##          - "0"
-##          - --reasoning-format
-##          - none
-#    default_params:
-#      timeout_seconds: 300
-#
-#  - id: gemma_e4b_local
-#    provider_type: openai_compatible
-#    model_name: gemma_e4b_local
-#    capabilities:
-#      input_modalities:
-#        - text
-#        - image
-#    connection:
-#      base_url: http://127.0.0.1:18013
-#      managed_server:
-#        binary_path: /opt/llama-cpp/llama-server
-#        model_path: /models/gemma-4-E4B-it-UD-IQ2_M.gguf
-#        host: 127.0.0.1
-#        port: 18013
-#        startup_timeout_seconds: 180
-#        threads: 8
-#        mmproj_path_env: GEMMA_E4B_LOCAL_MMPROJ_PATH
-#        extra_args:
-##          - --reasoning
-##          - "off"
-##          - --reasoning-budget
-##          - "0"
-##          - --reasoning-format
-##          - none
-#    default_params:
-#      timeout_seconds: 300
-
 providers:
-  - id: gemma_e2b_q4_local
-    provider_type: openai_compatible
-    model_name: gemma_e2b_q4_local
-    capabilities:
-      input_modalities:
-        - text
-        - image
-    connection:
-      base_url: http://127.0.0.1:18012
-      managed_server:
-        binary_path: /opt/llama-cpp/llama-server
-        model_path: /models/google_gemma-4-E2B-it-Q4_K_M.gguf
-        host: 127.0.0.1
-        port: 18012
-        startup_timeout_seconds: 180
-        threads: 8
-        mmproj_path_env: GEMMA_E2B_Q4_LOCAL_MMPROJ_PATH
-        extra_args:
-          - --reasoning
-          - "off"
-          - --reasoning-budget
-          - "0"
-          - --reasoning-format
-          - "none"
-    default_params:
-      timeout_seconds: 300
-
+- capabilities:
+    input_modalities:
+    - text
+    - image
+  connection:
+    base_url: http://127.0.0.1:18012
+    managed_server:
+      binary_path: /opt/llama-cpp/llama-server
+      extra_args:
+      - --reasoning
+      - 'off'
+      - --reasoning-budget
+      - '0'
+      - --reasoning-format
+      - none
+      host: 127.0.0.1
+      mmproj_path_env: GEMMA_E2B_Q4_LOCAL_MMPROJ_PATH
+      model_path: /models/google_gemma-4-E2B-it-Q4_K_M.gguf
+      port: 18012
+      startup_timeout_seconds: 180
+      threads: 4
+  default_params:
+    timeout_seconds: 300
+  id: gemma_e2b_q4_local
+  model_name: gemma_e2b_q4_local
+  provider_type: openai_compatible
