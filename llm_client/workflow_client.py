@@ -85,7 +85,10 @@ class WorkflowClient:
 
         start = time.monotonic()
         try:
-            resp = requests.post(url, json=payload, timeout=model_entry.timeout)
+            headers = {}
+            if model_entry.api_key:
+                headers["Authorization"] = f"Bearer {model_entry.api_key}"
+            resp = requests.post(url, json=payload, headers=headers or None, timeout=model_entry.timeout)
             resp.raise_for_status()
         except requests.exceptions.ConnectionError as exc:
             return self._fallback_or_error(
@@ -187,7 +190,13 @@ class WorkflowClient:
                 f"Unknown workflow {name!r}. "
                 f"Available: {list(self._config.workflows.keys())}"
             )
-        base = self._config.workflows[name].model_dump()
+        wf = self._config.workflows[name]
+        base = wf.model_dump()
+        # Resolve prompt_ref → system_prompt so downstream code always reads
+        # the resolved prompt from the "system_prompt" key.
+        resolved = self._config.resolve_prompt(wf)
+        if resolved is not None:
+            base["system_prompt"] = resolved
         base.update(overrides)
         return base  # type: ignore[return-value]
 
@@ -215,12 +224,14 @@ class WorkflowClient:
 
         return result
 
-    def _try_parse_json(self, text: str) -> dict | list | None:
+    def _try_parse_json(self, text: str | None) -> dict | list | None:
         """Attempt to extract and parse a JSON payload from model output.
 
         Tries the whole body first; falls back to the first ``{...}`` or ``[...]``
-        block found via regex.
+        block found via regex. Returns None if text is empty or unparseable.
         """
+        if not text:
+            return None
         text = text.strip()
 
         # Direct parse
