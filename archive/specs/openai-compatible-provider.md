@@ -1,3 +1,7 @@
+> **DEPRECATED** — This file is part of the retired spec-driven development process (2026-08-28).
+> The factory workflow (PRDs at `docs/prd/` + vision docs at `docs/vision/`) replaces it.
+> Retained for retrospective analysis only. Do not use as active guidance.
+
 # OpenAI-Compatible Provider
 
 ## Status

@@ -271,17 +271,11 @@ Notes:
 
 ## Development workflow
 
-Spec-driven work in this repository now uses living canonical specs rather than chronological per-change specs.
-all feature work must use the `feature-development` skill / prompt.
+This repository follows the factory SDLC: work flows through tasks → PRDs → implementation → review → merge.
+See `docs/vision/VISION.md` for the current architecture and direction.
 
-See:
-
-- `.pi/prompts/feature-development.md`
-- `.agents/skills/feature-development/SKILL.md`
-- `docs/FEATURE_DEVELOPMENT_WORKFLOW.md`
-- `specs/feature-development-workflow.md`
-- `specs/TEMPLATE.md`
-- `CHANGELOG.md`
+Historical spec-driven development artifacts are archived in `archive/specs/` and `archive/`
+for retrospective analysis. They are not active guidance.
 
 ## `llm_client` — Shared pip-installable workflow client
 
