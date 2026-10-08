@@ -1,9 +1,8 @@
-<!-- OPENWIKI:START -->
+# Agent Instructions
 
-## OpenWiki
+Code is the source of truth. Prefer the tip, tests, and project docs over any
+snapshot narrative.
 
-This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
-
-The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
-
-<!-- OPENWIKI:END -->
+Start with [docs/vision/VISION.md](docs/vision/VISION.md) when you need product
+intent. See also [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Search the tree
+with narrow `rg`/`grep` before loading large files.
